@@ -1,0 +1,103 @@
+import React, { useState } from 'react';
+import { UserPlus, Clock } from 'lucide-react';
+
+interface SetupPageProps {
+  onSetupComplete: () => void;
+}
+
+export const SetupPage: React.FC<SetupPageProps> = ({ onSetupComplete }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Parolele nu se potrivesc.');
+      return;
+    }
+
+    if (password.length < 6) {
+        setError('Parola trebuie să conțină cel puțin 6 caractere.');
+        return;
+    }
+    
+    setIsLoading(true);
+
+    setTimeout(() => {
+      try {
+        const credentials = { username, password };
+        localStorage.setItem('userCredentials', JSON.stringify(credentials));
+        onSetupComplete();
+      } catch (err) {
+        setError('A apărut o eroare la salvarea datelor.');
+      }
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  return (
+    <div className="h-full w-full flex items-center justify-center p-4 bg-zinc-100 dark:bg-black">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-10">
+            <div className="inline-block p-4 bg-blue-500 rounded-3xl mb-4">
+                <Clock className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-black dark:text-white">Bun venit!</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-2">Creați un cont pentru a începe.</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 space-y-2">
+            <input
+              type="text"
+              placeholder="Nume utilizator"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full bg-transparent text-black dark:text-white py-2 border-b border-zinc-200 dark:border-zinc-800 focus:border-blue-500 focus:outline-none"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Parolă (min. 6 caractere)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-transparent text-black dark:text-white py-2 border-b border-zinc-200 dark:border-zinc-800 focus:border-blue-500 focus:outline-none"
+              required
+            />
+             <input
+              type="password"
+              placeholder="Confirmare parolă"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full bg-transparent text-black dark:text-white py-2 focus:border-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full py-3.5 rounded-xl flex items-center justify-center font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 dark:focus:ring-offset-black ${
+              isLoading
+                ? 'bg-zinc-400 dark:bg-zinc-600 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300 dark:focus:ring-blue-700'
+            }`}
+          >
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <span>Creare Cont</span>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
