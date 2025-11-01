@@ -11,11 +11,11 @@ interface ChartCardProps {
 export const ChartCard: React.FC<ChartCardProps> = ({ title, data, theme, hasNoLimit }) => {
   const isDark = theme === 'dark';
 
-  const tickColor = isDark ? '#71717a' : '#71717a'; // zinc-500
-  const gridColor = isDark ? '#27272a' : '#f4f4f5'; // zinc-800, zinc-100
+  const tickColor = isDark ? '#71717a' : '#6b7280'; // zinc-500, gray-500
+  const gridColor = isDark ? '#27272a' : '#f3f4f6'; // zinc-800, gray-100
   const tooltipBg = isDark ? '#18181b' : '#ffffff'; // zinc-900, white
-  const tooltipBorder = isDark ? '#3f3f46' : '#e4e4e7'; // zinc-700, zinc-200
-  const textColor = isDark ? '#f4f4f5' : '#18181b'; // zinc-100, zinc-900
+  const tooltipBorder = isDark ? '#3f3f46' : '#e5e7eb'; // zinc-700, gray-200
+  const textColor = isDark ? '#f4f4f5' : '#111827'; // zinc-100, gray-900
 
   // Calculate ticks for the Y-axis with 0.5 increments
   const yAxisTicks = useMemo(() => {
@@ -37,7 +37,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, data, theme, hasNoL
   return (
     <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm mt-4">
        <div className="mb-2">
-         <p className="text-lg font-semibold text-black dark:text-white">{title}</p>
+         <p className="text-lg font-semibold text-gray-900 dark:text-white">{title}</p>
        </div>
       <div style={{ width: '100%', height: 160 }}>
         <ResponsiveContainer>
@@ -65,10 +65,10 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, data, theme, hasNoL
                 padding: '4px 8px'
               }}
               labelStyle={{ color: textColor, fontWeight: 'bold' }}
-              itemStyle={{ color: textColor, padding: '2px 0' }}
+              itemStyle={{ padding: '2px 0' }}
             />
-            <Bar dataKey="Ore Normale" stackId="a" fill="#007AFF" radius={[4, 4, 0, 0]} barSize={10} />
-            {!hasNoLimit && <Bar dataKey="Ore Suplimentare" stackId="a" fill="#FF9500" radius={[4, 4, 0, 0]} barSize={10} />}
+            <Bar dataKey="Ore Normale" stackId="a" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={10} />
+            {!hasNoLimit && <Bar dataKey="Ore Suplimentare" stackId="a" fill="#f97316" radius={[4, 4, 0, 0]} barSize={10} />}
           </BarChart>
         </ResponsiveContainer>
       </div>

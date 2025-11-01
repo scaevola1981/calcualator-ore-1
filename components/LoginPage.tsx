@@ -33,14 +33,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="h-full w-full flex items-center justify-center p-4 bg-zinc-100 dark:bg-black">
+    <div className="h-full w-full flex items-center justify-center p-4 bg-gray-50 dark:bg-black">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-            <div className="inline-block p-4 bg-blue-500 rounded-3xl mb-4">
+            <div className="inline-block p-4 bg-blue-600 rounded-3xl mb-4">
                 <Clock className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-black dark:text-white">Contor Ore</h1>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-2">Autentificați-vă pentru a continua.</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Contor Ore</h1>
+            <p className="text-gray-500 dark:text-zinc-400 mt-2">Autentificați-vă pentru a continua.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -50,7 +50,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     placeholder="Nume utilizator"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-transparent text-black dark:text-white py-2 border-b border-zinc-200 dark:border-zinc-800 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-transparent text-gray-900 dark:text-white py-2 border-b border-gray-200 dark:border-zinc-800 focus:border-blue-500 focus:outline-none"
                     required
                 />
                 <input
@@ -58,7 +58,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     placeholder="Parolă"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-transparent text-black dark:text-white py-2 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-transparent text-gray-900 dark:text-white py-2 focus:border-blue-500 focus:outline-none"
                     required
                 />
             </div>
@@ -70,8 +70,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               disabled={isLoading}
               className={`w-full py-3.5 rounded-xl flex items-center justify-center font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 dark:focus:ring-offset-black ${
                 isLoading
-                  ? 'bg-zinc-400 dark:bg-zinc-600 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300 dark:focus:ring-blue-700'
+                  ? 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300 dark:focus:ring-blue-700'
               }`}
             >
               {isLoading ? (

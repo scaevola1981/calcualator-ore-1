@@ -297,8 +297,8 @@ const App: React.FC = () => {
         onClick={onClick}
         className={`flex flex-col items-center justify-center gap-1 w-full py-3 transition-colors ${
             active
-                ? 'text-blue-500'
-                : 'text-zinc-500 dark:text-zinc-400'
+                ? 'text-blue-600'
+                : 'text-gray-500 dark:text-zinc-400'
         }`}
     >
         <Icon className={`w-6 h-6`} />
@@ -352,22 +352,22 @@ const App: React.FC = () => {
   return (
     <div className="h-full w-full max-w-2xl mx-auto flex flex-col font-sans">
       <header className="px-4 pt-6 sm:px-6">
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm font-semibold">{currentHeader.subtitle}</p>
-        <h1 className="text-4xl font-bold text-black dark:text-white">{currentHeader.title}</h1>
+        <p className="text-gray-500 dark:text-zinc-400 text-sm font-semibold">{currentHeader.subtitle}</p>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{currentHeader.title}</h1>
       </header>
 
       <main className="flex-grow p-4 sm:p-6 space-y-4 overflow-y-auto pb-48">
         {page === 'home' && (
           <div className="space-y-4">
              <div className="space-y-4">
-                <StatCard title={settings.hasNoLimit ? "Ore Lucrate Azi" : "Ore Normale Azi"} value={formatHoursMinutes(normalHours)} icon={<Briefcase className="w-6 h-6 text-blue-500" />} />
+                <StatCard title={settings.hasNoLimit ? "Ore Lucrate Azi" : "Ore Normale Azi"} value={formatHoursMinutes(normalHours)} icon={<Briefcase className="w-6 h-6 text-blue-600" />} />
                 
                 {!settings.hasNoLimit && (
                     <StatCard title="Ore Suplim. Azi" value={formatHoursMinutes(overtimeHours)} icon={<PlusCircle className="w-6 h-6 text-orange-500" />} />
                 )}
 
                 {settings.hasNoLimit && (
-                    <StatCard title="Total Ore (General)" value={formatHoursMinutes(totalHoursWorked)} icon={<TrendingUp className="w-6 h-6 text-green-500" />} />
+                    <StatCard title="Total Ore (General)" value={formatHoursMinutes(totalHoursWorked)} icon={<TrendingUp className="w-6 h-6 text-green-600" />} />
                 )}
             </div>
             
@@ -386,7 +386,7 @@ const App: React.FC = () => {
               className={`w-full max-w-xs mx-auto h-14 rounded-xl flex flex-col items-center justify-center font-bold text-white transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 dark:focus:ring-offset-black shadow-lg ${
                 isWorking
                   ? 'bg-red-500 focus:ring-red-300 dark:focus:ring-red-700 shadow-red-500/30'
-                  : 'bg-blue-500 focus:ring-blue-300 dark:focus:ring-blue-700 shadow-blue-500/30'
+                  : 'bg-blue-600 focus:ring-blue-300 dark:focus:ring-blue-700 shadow-blue-500/30'
               }`}
             >
                {isWorking ? (
@@ -405,7 +405,7 @@ const App: React.FC = () => {
       )}
       
       <div className="fixed bottom-4 inset-x-4 max-w-2xl mx-auto z-10">
-          <div className="w-full h-20 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl shadow-lg">
+          <div className="w-full h-20 bg-white/95 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-200/80 dark:border-zinc-800/80 rounded-xl shadow-lg">
             <nav className="flex justify-around items-center h-full">
                 <NavButton active={page === 'home'} onClick={() => setPage('home')} icon={Home}>Acasă</NavButton>
                 <NavButton active={page === 'history'} onClick={() => setPage('history')} icon={History}>Istoric</NavButton>
