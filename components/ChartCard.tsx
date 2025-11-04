@@ -4,18 +4,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface ChartCardProps {
   title: string;
   data: any[];
-  theme: 'light' | 'dark';
   hasNoLimit: boolean;
 }
 
-export const ChartCard: React.FC<ChartCardProps> = ({ title, data, theme, hasNoLimit }) => {
-  const isDark = theme === 'dark';
-
-  const tickColor = isDark ? '#71717a' : '#6b7280'; // zinc-500, gray-500
-  const gridColor = isDark ? '#27272a' : '#f3f4f6'; // zinc-800, gray-100
-  const tooltipBg = isDark ? '#18181b' : '#ffffff'; // zinc-900, white
-  const tooltipBorder = isDark ? '#3f3f46' : '#e5e7eb'; // zinc-700, gray-200
-  const textColor = isDark ? '#f4f4f5' : '#111827'; // zinc-100, gray-900
+export const ChartCard: React.FC<ChartCardProps> = ({ title, data, hasNoLimit }) => {
+  const tickColor = '#6b7280'; // gray-500
+  const gridColor = '#f3f4f6'; // gray-100
+  const tooltipBg = '#ffffff'; // white
+  const tooltipBorder = '#e5e7eb'; // gray-200
+  const textColor = '#111827'; // gray-900
 
   // Calculate ticks for the Y-axis with 0.5 increments
   const yAxisTicks = useMemo(() => {
@@ -35,9 +32,9 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, data, theme, hasNoL
   }, [data]);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm mt-4">
+    <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200 mt-4">
        <div className="mb-2">
-         <p className="text-lg font-semibold text-gray-900 dark:text-white">{title}</p>
+         <p className="text-lg font-semibold text-gray-900">{title}</p>
        </div>
       <div style={{ width: '100%', height: 160 }}>
         <ResponsiveContainer>
@@ -56,7 +53,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, data, theme, hasNoL
                 width={30}
             />
             <Tooltip
-              cursor={{fill: 'rgba(161, 161, 170, 0.1)'}} // zinc-400/10
+              cursor={{fill: 'rgba(161, 161, 170, 0.1)'}}
               contentStyle={{
                 backgroundColor: tooltipBg,
                 borderColor: tooltipBorder,

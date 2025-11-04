@@ -41,24 +41,24 @@ export const SetupPage: React.FC<SetupPageProps> = ({ onSetupComplete }) => {
   };
 
   return (
-    <div className="h-full w-full flex items-center justify-center p-4 bg-gray-50 dark:bg-black">
+    <div className="h-full w-full flex items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
             <div className="inline-block p-4 bg-blue-600 rounded-3xl mb-4">
                 <Clock className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Bun venit!</h1>
-            <p className="text-gray-500 dark:text-zinc-400 mt-2">Creați un cont pentru a începe.</p>
+            <h1 className="text-4xl font-bold text-gray-900">Bun venit!</h1>
+            <p className="text-gray-500 mt-2">Creați un cont pentru a începe.</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 space-y-2">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 space-y-2">
             <input
               type="text"
               placeholder="Nume utilizator"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-transparent text-gray-900 dark:text-white py-2 border-b border-gray-200 dark:border-zinc-800 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-transparent text-gray-900 py-2 border-b border-gray-200 focus:border-blue-500 focus:outline-none"
               required
             />
             <input
@@ -66,7 +66,7 @@ export const SetupPage: React.FC<SetupPageProps> = ({ onSetupComplete }) => {
               placeholder="Parolă (min. 6 caractere)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent text-gray-900 dark:text-white py-2 border-b border-gray-200 dark:border-zinc-800 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-transparent text-gray-900 py-2 border-b border-gray-200 focus:border-blue-500 focus:outline-none"
               required
             />
              <input
@@ -74,7 +74,7 @@ export const SetupPage: React.FC<SetupPageProps> = ({ onSetupComplete }) => {
               placeholder="Confirmare parolă"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-transparent text-gray-900 dark:text-white py-2 focus:border-blue-500 focus:outline-none"
+              className="w-full bg-transparent text-gray-900 py-2 focus:border-blue-500 focus:outline-none"
               required
             />
           </div>
@@ -84,10 +84,10 @@ export const SetupPage: React.FC<SetupPageProps> = ({ onSetupComplete }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3.5 rounded-xl flex items-center justify-center font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 dark:focus:ring-offset-black ${
+            className={`w-full py-3.5 rounded-xl flex items-center justify-center font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 ${
               isLoading
-                ? 'bg-gray-400 dark:bg-zinc-600 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-300 dark:focus:ring-blue-700'
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gray-400'
             }`}
           >
             {isLoading ? (

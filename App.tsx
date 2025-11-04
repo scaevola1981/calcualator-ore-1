@@ -9,18 +9,6 @@ import { SetupPage } from './components/SetupPage';
 import { CalculatorPage } from './components/CalculatorPage';
 import type { WorkSession } from './types';
 
-// Helper function to apply theme to DOM and localStorage
-const applyTheme = (theme: 'light' | 'dark') => {
-    const root = window.document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('appTheme', theme);
-};
-
-
 const App: React.FC = () => {
   const [isSetupComplete, setIsSetupComplete] = useState<boolean>(() => {
     return !!localStorage.getItem('userCredentials');
@@ -31,29 +19,6 @@ const App: React.FC = () => {
   });
 
   const [page, setPage] = useState<'home' | 'history' | 'settings' | 'calculator'>('home');
-
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      const storedTheme = localStorage.getItem('appTheme');
-      if (storedTheme === 'dark' || storedTheme === 'light') {
-        return storedTheme;
-      }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return 'light';
-  });
-
-  // Apply theme on initial load
-  useEffect(() => {
-    applyTheme(theme);
-  }, []); // Runs only once on mount
-
-  const handleThemeChange = useCallback((newTheme: 'light' | 'dark') => {
-    if (newTheme === theme) return;
-    applyTheme(newTheme);
-    setTheme(newTheme);
-  }, [theme]);
-
 
   const [isWorking, setIsWorking] = useState<boolean>(() => {
     const saved = localStorage.getItem('isWorking');
@@ -132,12 +97,10 @@ const App: React.FC = () => {
         const endTime = new Date();
         const durationMs = endTime.getTime() - startTime.getTime();
 
-        // Round duration up to the nearest 30 minutes
         const totalMinutes = durationMs / (1000 * 60);
         const roundedTotalMinutes = Math.ceil(totalMinutes / 30) * 30;
         const roundedDurationMs = roundedTotalMinutes * 60 * 1000;
 
-        // Calculate the new end time based on the rounded duration
         const roundedEndTime = new Date(startTime.getTime() + roundedDurationMs);
 
         setWorkSessions(prev => [...prev, { startTime, endTime: roundedEndTime }]);
@@ -191,14 +154,13 @@ const App: React.FC = () => {
 
   const weeklyChartData = useMemo(() => {
     const days = [];
-    const dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D']; // Luni -> Duminica
+    const dayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
     const today = new Date();
-    const currentDayOfWeek = today.getDay(); // 0=Duminica, 1=Luni...
+    const currentDayOfWeek = today.getDay();
     
-    // Calculează data de Luni a săptămânii curente
     const monday = new Date(today);
-    const diffToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek; // Ajustare pentru Duminica
+    const diffToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
     monday.setDate(today.getDate() + diffToMonday);
 
     for (let i = 0; i < 7; i++) {
@@ -253,7 +215,6 @@ const App: React.FC = () => {
           return acc + (new Date(session.endTime).getTime() - new Date(session.startTime).getTime());
       }, 0);
 
-      // Add current session if working
       if (isWorking && startTime) {
           totalMilliseconds += currentTime.getTime() - startTime.getTime();
       }
@@ -295,10 +256,10 @@ const App: React.FC = () => {
   const NavButton = ({ active, onClick, children, icon: Icon }: any) => (
     <button
         onClick={onClick}
-        className={`flex flex-col items-center justify-center gap-1 w-full py-3 transition-colors ${
+        className={`flex flex-col items-center justify-center gap-1 w-full py-2 transition-colors ${
             active
-                ? 'text-blue-600'
-                : 'text-gray-500 dark:text-zinc-400'
+                ? 'text-blue-500'
+                : 'text-gray-400'
         }`}
     >
         <Icon className={`w-6 h-6`} />
@@ -309,11 +270,11 @@ const App: React.FC = () => {
   const pageHeaders = {
     home: {
         title: 'Panou de control',
-        subtitle: new Date().toLocaleDateString('ro-RO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        subtitle: 'Bună dimineața',
     },
     history: {
         title: 'Istoric',
-        subtitle: 'Vizualizați activitatea trecută',
+        subtitle: 'Activitatea dumneavoastră',
     },
     settings: {
         title: 'Setări',
@@ -321,7 +282,7 @@ const App: React.FC = () => {
     },
     calculator: {
         title: 'Calculator',
-        subtitle: 'Estimați venitul total',
+        subtitle: 'Estimați venitul',
     },
   };
 
@@ -351,61 +312,56 @@ const App: React.FC = () => {
 
   return (
     <div className="h-full w-full max-w-2xl mx-auto flex flex-col font-sans">
-      <header className="px-4 pt-6 sm:px-6">
-        <p className="text-gray-500 dark:text-zinc-400 text-sm font-semibold">{currentHeader.subtitle}</p>
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{currentHeader.title}</h1>
+      <header className="px-4 pt-8 sm:px-6">
+        <p className="text-gray-500 text-base font-semibold">{currentHeader.subtitle}</p>
+        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">{currentHeader.title}</h1>
       </header>
 
-      <main className="flex-grow p-4 sm:p-6 space-y-4 overflow-y-auto pb-48">
+      <main className="flex-grow p-4 sm:p-6 space-y-4 overflow-y-auto pb-28">
         {page === 'home' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
              <div className="space-y-4">
-                <StatCard title={settings.hasNoLimit ? "Ore Lucrate Azi" : "Ore Normale Azi"} value={formatHoursMinutes(normalHours)} icon={<Briefcase className="w-6 h-6 text-blue-600" />} />
+                <StatCard title={settings.hasNoLimit ? "Ore Lucrate Azi" : "Ore Normale Azi"} value={formatHoursMinutes(normalHours)} icon={<Briefcase className="w-6 h-6 text-blue-500" />} />
                 
                 {!settings.hasNoLimit && (
                     <StatCard title="Ore Suplim. Azi" value={formatHoursMinutes(overtimeHours)} icon={<PlusCircle className="w-6 h-6 text-orange-500" />} />
                 )}
 
                 {settings.hasNoLimit && (
-                    <StatCard title="Total Ore (General)" value={formatHoursMinutes(totalHoursWorked)} icon={<TrendingUp className="w-6 h-6 text-green-600" />} />
+                    <StatCard title="Total Ore (General)" value={formatHoursMinutes(totalHoursWorked)} icon={<TrendingUp className="w-6 h-6 text-green-500" />} />
                 )}
             </div>
             
-            <ChartCard title="Sumar Săptămânal" data={weeklyChartData} theme={theme} hasNoLimit={settings.hasNoLimit} />
-          </div>
-        )}
-        {page === 'history' && <HistoryPage workSessions={workSessions} settings={settings} todaySessions={todayCompletedSessions} formatHoursMinutes={formatHoursMinutes} />}
-        {page === 'settings' && <SettingsPage settings={settings} onSettingsChange={setSettings} theme={theme} onThemeChange={handleThemeChange} onLogout={handleLogout} />}
-        {page === 'calculator' && <CalculatorPage totalHours={totalHoursWorked} settings={settings} onSettingsChange={setSettings} />}
-      </main>
+            <ChartCard title="Sumar Săptămânal" data={weeklyChartData} hasNoLimit={settings.hasNoLimit} />
 
-      {page === 'home' && (
-        <div className="fixed bottom-[104px] inset-x-4 max-w-2xl mx-auto z-20 flex flex-col items-center">
             <button
               onClick={handleStartStop}
-              className={`w-full max-w-xs mx-auto h-14 rounded-xl flex flex-col items-center justify-center font-bold text-white transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-offset-2 dark:focus:ring-offset-black shadow-lg ${
+              className={`w-full h-16 rounded-2xl flex items-center justify-center font-bold text-white transition-all duration-300 ease-in-out transform focus:outline-none focus:ring-4 focus:ring-offset-2 shadow-lg ${
                 isWorking
-                  ? 'bg-red-500 focus:ring-red-300 dark:focus:ring-red-700 shadow-red-500/30'
-                  : 'bg-blue-600 focus:ring-blue-300 dark:focus:ring-blue-700 shadow-blue-500/30'
+                  ? 'bg-red-500 focus:ring-red-300 shadow-red-500/30'
+                  : 'bg-blue-500 focus:ring-blue-300 shadow-blue-500/30'
               }`}
             >
                {isWorking ? (
-                <>
-                  <span className="text-xl font-mono tracking-tighter">{formatDuration(currentSessionDuration)}</span>
-                  <span className="text-xs font-semibold mt-0.5">Oprește</span>
-                </>
+                <div className="text-center">
+                  <span className="text-2xl font-mono tracking-tighter">{formatDuration(currentSessionDuration)}</span>
+                  <span className="text-xs font-semibold block mt-0.5">Oprește Muncă</span>
+                </div>
               ) : (
-                <>
-                  <Clock className="w-5 h-5" />
-                  <span className="text-sm font-semibold mt-1">Start Muncă</span>
-                </>
+                <div className="text-center">
+                  <span className="text-lg font-semibold">Start Muncă</span>
+                </div>
               )}
             </button>
-        </div>
-      )}
+          </div>
+        )}
+        {page === 'history' && <HistoryPage workSessions={workSessions} settings={settings} todaySessions={todayCompletedSessions} formatHoursMinutes={formatHoursMinutes} />}
+        {page === 'settings' && <SettingsPage settings={settings} onSettingsChange={setSettings} onLogout={handleLogout} />}
+        {page === 'calculator' && <CalculatorPage totalHours={totalHoursWorked} settings={settings} onSettingsChange={setSettings} />}
+      </main>
       
       <div className="fixed bottom-4 inset-x-4 max-w-2xl mx-auto z-10">
-          <div className="w-full h-20 bg-white/95 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-200/80 dark:border-zinc-800/80 rounded-xl shadow-lg">
+          <div className="w-full h-[72px] bg-white/80 backdrop-blur-xl border border-gray-200 rounded-[24px] shadow-xl">
             <nav className="flex justify-around items-center h-full">
                 <NavButton active={page === 'home'} onClick={() => setPage('home')} icon={Home}>Acasă</NavButton>
                 <NavButton active={page === 'history'} onClick={() => setPage('history')} icon={History}>Istoric</NavButton>

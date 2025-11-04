@@ -83,21 +83,21 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ workSessions, settings
   if (dailySummaries.length === 0 && todaySessions.length === 0) {
     return (
       <div className="text-center py-16">
-        <BookOpen className="w-12 h-12 mx-auto text-gray-400 dark:text-zinc-500 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Niciun istoric</h2>
-        <p className="text-gray-500 dark:text-zinc-400 mt-1">Începe o sesiune de lucru pentru a vedea istoricul aici.</p>
+        <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900">Niciun istoric</h2>
+        <p className="text-gray-500 mt-1">Începe o sesiune de lucru pentru a vedea istoricul aici.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm">
+      <div className="bg-white rounded-xl shadow-md border border-gray-200">
         <div
           className="p-4 cursor-pointer flex justify-between items-center"
           onClick={() => setIsSummaryExpanded(prev => !prev)}
         >
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sumar General</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Sumar General</h2>
           <div className="flex items-center gap-3">
               <p className="text-lg font-semibold text-blue-600">{formatHoursMinutes(grandTotals.total)}</p>
               <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isSummaryExpanded ? 'rotate-180' : ''}`} />
@@ -105,21 +105,21 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ workSessions, settings
         </div>
         <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isSummaryExpanded ? 'max-h-96' : 'max-h-0'}`}>
             <div className="px-4 pb-4">
-              <div className={`grid ${settings.hasNoLimit ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'} gap-3 text-center pt-3 border-t border-gray-200 dark:border-zinc-800`}>
+              <div className={`grid ${settings.hasNoLimit ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'} gap-3 text-center pt-3 border-t border-gray-200`}>
                   <div>
-                      <p className="text-sm text-gray-500 dark:text-zinc-400">{settings.hasNoLimit ? 'Total Ore Lucrate' : 'Normale'}</p>
+                      <p className="text-sm text-gray-500">{settings.hasNoLimit ? 'Total Ore Lucrate' : 'Normale'}</p>
                       <p className="text-2xl font-semibold text-blue-600">{formatHoursMinutes(grandTotals.normal)}</p>
                   </div>
                   {!settings.hasNoLimit && (
                     <div>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">Suplimentare</p>
+                        <p className="text-sm text-gray-500">Suplimentare</p>
                         <p className="text-2xl font-semibold text-orange-500">{formatHoursMinutes(grandTotals.overtime)}</p>
                     </div>
                   )}
               </div>
               {settings.hasNoLimit && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800 text-center">
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Venit Total Estimat</p>
+                <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                    <p className="text-sm text-gray-500">Venit Total Estimat</p>
                     <p className="text-2xl font-semibold text-green-600">
                       {grandTotals.totalPay.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       <span className="ml-1 text-lg">{settings.currency}</span>
@@ -132,35 +132,35 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ workSessions, settings
 
       <div className="space-y-3">
         {dailySummaries.map((summary, idx) => (
-            <div key={summary.date} className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm">
+            <div key={summary.date} className="bg-white rounded-xl shadow-md border border-gray-200">
                <div
                   className="p-4 cursor-pointer flex justify-between items-center"
                   onClick={() => toggleDayExpansion(summary.date)}
                >
-                  <h3 className="font-semibold text-gray-900 dark:text-white">{formatDate(new Date(summary.date))}</h3>
+                  <h3 className="font-semibold text-gray-900">{formatDate(new Date(summary.date))}</h3>
                   <div className="flex items-center gap-3">
-                      <p className="font-semibold text-gray-600 dark:text-zinc-300">{formatHoursMinutes(summary.totalHours)}</p>
+                      <p className="font-semibold text-gray-600">{formatHoursMinutes(summary.totalHours)}</p>
                       <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${expandedDays[summary.date] ? 'rotate-180' : ''}`} />
                   </div>
                </div>
               <div className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${expandedDays[summary.date] ? 'max-h-[1000px]' : 'max-h-0'}`}>
                 <div className="px-4 pb-4">
-                    <div className="border-t border-gray-200 dark:border-zinc-800 pt-4">
+                    <div className="border-t border-gray-200 pt-4">
                       <div className={`grid ${settings.hasNoLimit ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'} gap-3 text-center mb-4`}>
                         <div>
-                            <p className="text-sm text-gray-500 dark:text-zinc-400">{settings.hasNoLimit ? 'Total Ore Lucrate' : 'Normale'}</p>
+                            <p className="text-sm text-gray-500">{settings.hasNoLimit ? 'Total Ore Lucrate' : 'Normale'}</p>
                             <p className="text-lg font-semibold text-blue-600">{formatHoursMinutes(summary.normalHours)}</p>
                         </div>
                         {!settings.hasNoLimit && (
                           <div>
-                              <p className="text-sm text-gray-500 dark:text-zinc-400">Suplimentare</p>
+                              <p className="text-sm text-gray-500">Suplimentare</p>
                               <p className="text-lg font-semibold text-orange-500">{formatHoursMinutes(summary.overtimeHours)}</p>
                           </div>
                         )}
                       </div>
                        {settings.hasNoLimit && (
-                        <div className="mt-2 pt-4 border-t border-gray-200 dark:border-zinc-800 text-center">
-                            <p className="text-sm text-gray-500 dark:text-zinc-400">Venit Estimat (Zi)</p>
+                        <div className="mt-2 pt-4 border-t border-gray-200 text-center">
+                            <p className="text-sm text-gray-500">Venit Estimat (Zi)</p>
                             <p className="text-lg font-semibold text-green-600">
                                 {summary.dailyPay.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 <span className="ml-1">{settings.currency}</span>
@@ -169,16 +169,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ workSessions, settings
                       )}
                     </div>
                      {summary.sessions.length > 0 && (
-                        <div className="mt-2 pt-4 border-t border-gray-200 dark:border-zinc-800">
-                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Sesiuni</h4>
+                        <div className="mt-2 pt-4 border-t border-gray-200">
+                            <h4 className="font-semibold text-gray-900 mb-2">Sesiuni</h4>
                             <ul className="space-y-1">
                                 {summary.sessions.map((session, index) => (
-                                    <li key={index} className="flex items-center justify-between p-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-zinc-800">
-                                      <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-300">
+                                    <li key={index} className="flex items-center justify-between p-2 rounded-lg text-sm hover:bg-gray-100">
+                                      <div className="flex items-center gap-2 text-gray-600">
                                         <Clock className="w-4 h-4 text-gray-400"/>
                                         Sesiunea {index + 1}
                                       </div>
-                                      <div className="font-mono text-gray-800 dark:text-zinc-200 text-xs">
+                                      <div className="font-mono text-gray-800 text-xs">
                                           <span>{formatTime(new Date(session.startTime))}</span>
                                           <span className="mx-1">-</span>
                                           <span>{formatTime(new Date(session.endTime))}</span>

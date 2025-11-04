@@ -18,15 +18,8 @@
   }
 }
 </script>
-<script>
-    if (localStorage.getItem('appTheme') === 'dark' || (!('appTheme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
-</script>
 </head>
-  <body class="h-full bg-gray-50 dark:bg-black">
+  <body class="h-full bg-gray-50">
     <div id="root" class="h-full"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
