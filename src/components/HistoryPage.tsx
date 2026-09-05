@@ -12,8 +12,7 @@ import {
 import {
   calculateEffectiveHourlyRate,
   calculateSalary,
-  roundEntryTime,
-  roundExitTime,
+  calculateDurationWithBreak,
   splitSessionByDay,
 } from "../utils/timeRounding";
 import { getLocalISODate } from '../utils/dateUtils';
@@ -148,13 +147,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     );
 
     map.forEach((summary, key) => {
-      const totalMilliseconds = summary.sessions.reduce(
+      // Sum session durations with automatic 30-minute break deducted from each session
+      const totalHours = summary.sessions.reduce(
         (acc, s) =>
-          acc +
-          (new Date(s.endTime).getTime() - new Date(s.startTime).getTime()),
+          acc + calculateDurationWithBreak(new Date(s.startTime), new Date(s.endTime)),
         0
       );
-      const totalHours = totalMilliseconds / (1000 * 60 * 60);
 
       summary.totalHours = totalHours;
 
@@ -294,18 +292,25 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       end.setDate(end.getDate() + 1);
     }
 
-    let finalStart = start;
-    let finalEnd = end;
+    const finalStart = start;
+    const finalEnd = end;
 
-    // Apply rounding rules ONLY if limits are active
-    if (!settings.hasNoLimit) {
-      finalStart = roundEntryTime(start);
-      finalEnd = roundExitTime(end);
+    if (finalEnd <= finalStart) {
+      setErrorMessage("Ora de sfârșit trebuie să fie după ora de început.");
+      return;
     }
 
-    // Validate again after rounding
-    if (finalEnd <= finalStart) {
-      setErrorMessage("După rotunjire, durata sesiunii este 0 sau negativă.");
+    // Validare anti-suprapunere
+    const hasOverlap = workSessions.some(existing => {
+      const exStart = new Date(existing.startTime).getTime();
+      const exEnd = new Date(existing.endTime).getTime();
+      const newStart = finalStart.getTime();
+      const newEnd = finalEnd.getTime();
+      return newStart < exEnd && newEnd > exStart;
+    });
+
+    if (hasOverlap) {
+      setErrorMessage("Sesiunea se suprapune cu o altă sesiune de lucru deja înregistrată!");
       return;
     }
 
@@ -338,8 +343,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
   return (
     <div className="space-y-4 animate-fade-in pb-24">
-      {/* HEADER - Blue Gradient Restored */}
-      <header className="px-6 pt-12 pb-10 mb-[-20px] relative z-0 header-gradient-bg rounded-b-[30px] shadow-lg -mx-4">
+      {/* HEADER */}
+      <header className="px-6 pt-12 pb-7 mb-4 relative header-gradient-bg rounded-b-[32px] shadow-lg -mx-4">
         <h1 className="text-3xl font-black mb-1 tracking-tight text-white drop-shadow-sm">
           Istoric
         </h1>
@@ -433,7 +438,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               } else if (isToday) {
                 dayClasses = "bg-white text-[#0072FF] shadow-md font-extrabold border-2 border-white";
               } else if (isHoliday) {
-                dayClasses = "bg-red-500/30 text-white border border-red-400/50";
+                dayClasses = "bg-white/15 text-white border-2 border-yellow-400/80 shadow-md";
               }
 
               return (
@@ -444,10 +449,22 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                       relative h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-300
                       ${dayClasses}
                   `}
+                  title={isHoliday ? "Sărbătoare Legală în România 🇷🇴" : undefined}
                 >
-                  <span>{date.getDate()}</span>
+                  <span className="relative z-10">{date.getDate()}</span>
                   {hasData && (
                     <div className="w-1.5 h-1.5 bg-white rounded-full absolute bottom-1.5 shadow-sm"></div>
+                  )}
+                  {isHoliday && (
+                    <>
+                      <span className="text-[9px] absolute top-0.5 right-0.5" title="Sărbătoare Legală">🇷🇴</span>
+                      {/* Marcaj Tricolor Românesc */}
+                      <div className="absolute bottom-0 inset-x-1.5 h-1 rounded-full flex overflow-hidden shadow-sm" title="Tricolor Românesc 🇷🇴">
+                        <span className="w-1/3 bg-[#002B7F]"></span>
+                        <span className="w-1/3 bg-[#FCD116]"></span>
+                        <span className="w-1/3 bg-[#CE1126]"></span>
+                      </div>
+                    </>
                   )}
                 </button>
               );
@@ -538,6 +555,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                               {formatTime(new Date(session.startTime))} - {formatTime(new Date(session.endTime))}
                             </span>
                           </div>
+                          <span className="text-xs text-gray-700 font-semibold mt-0.5">
+                            Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(new Date(session.startTime), new Date(session.endTime)))} (pauză 30m inclusă)
+                          </span>
                         </div>
                         <button
                           onClick={() => {

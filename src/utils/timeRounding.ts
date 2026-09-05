@@ -8,53 +8,28 @@ export const calculateHourlyRate = (monthlySalary: number, workingDaysPerMonth: 
 };
 
 /**
- * Rotunjire la 30 minute
- * Ex: 08:05 -> 08:30 (Intrare - rotunjire în sus pentru a nu penaliza, sau standard?)
- * User request: "rotunjește intervalele la 30 min (ex: 08:00, 08:30)"
- * Simplu: Nearest or rigid slots. Let's use standard rounding to nearest 30 for now, or adhere to specific business rules if known.
- * Usually for work:
- * Entry: 8:05 -> 8:30 (Late entry penalized? Or 8:00 allowed?)
- * Let's assume standard rounding to nearest 30m block for both for simplicity as per "ex: 08:00, 08:30".
+ * Rotunjire Timp: FĂRĂ rotunjire la intrare/ieșire (se înregistrează timpul real de lucru)
  */
-const roundTo30Minutes = (date: Date): Date => {
-  const rounded = new Date(date);
-  const minutes = rounded.getMinutes();
-  const remainder = minutes % 30;
-
-  // Standard rounding: close to next 30
-  if (remainder >= 15) {
-    rounded.setMinutes(minutes + (30 - remainder));
-  } else {
-    rounded.setMinutes(minutes - remainder);
-  }
-  rounded.setSeconds(0, 0);
-  return rounded;
-};
-
 export const roundEntryTime = (date: Date): Date => {
-  return roundTo30Minutes(date);
+  return new Date(date);
 };
 
 export const roundExitTime = (date: Date): Date => {
-  return roundTo30Minutes(date);
+  return new Date(date);
 };
 
 /**
- * Calculează durata efectivă scăzând pauza de 30 minute.
- * User request: "scade 30 min pauză"
+ * Calculează durata efectivă scăzând automat exact 30 minute de pauză de masă.
  */
 export const calculateDurationWithBreak = (start: Date, end: Date): number => {
-  const diffMs = end.getTime() - start.getTime();
+  const diffMs = new Date(end).getTime() - new Date(start).getTime();
   let hours = diffMs / (1000 * 60 * 60);
 
-  // Scade 30 min (0.5 ore) daca durata permite (ex: > 4 ore? Sau tot timpul?)
-  // "scade 30 min pauză" sounds mandatory. Let's apply it if duration > 0.5
+  // Scade automat exact 30 min (0.5 ore) din fiecare sesiune zilnică lucrată
   if (hours > 0.5) {
     hours -= 0.5;
   } else {
-    // If passed less than 30m, maybe 0? Or just leave it? 
-    // Let's assume 0 pay definition if < 30m break logic implies valid work day.
-    // For now, straightforward deduction.
+    hours = 0;
   }
 
   return Math.max(0, hours);
@@ -120,8 +95,11 @@ export const splitHoursByDay = (
   const day = date.getDay();
   const isWeekend = day === 0 || day === 6;
 
-  // Format date to YYYY-MM-DD for comparison
-  const dateString = date.toISOString().split('T')[0];
+  // Format date to local YYYY-MM-DD for comparison
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const dayOfMonth = String(date.getDate()).padStart(2, '0');
+  const dateString = `${year}-${month}-${dayOfMonth}`;
   const isLegalHoliday = legalHolidays.includes(dateString);
 
   if (isWeekend || isLegalHoliday) {

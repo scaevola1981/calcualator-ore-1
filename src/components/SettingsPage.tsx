@@ -91,7 +91,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
   return (
     <div className="space-y-6 animate-fade-in pb-48 px-2 md:px-0">
       {/* HEADER */}
-      <header className="px-6 pt-12 pb-10 mb-6 relative z-0 header-gradient-bg rounded-b-[30px] shadow-lg -mx-2 -mt-4">
+      <header className="px-6 pt-12 pb-7 mb-4 relative header-gradient-bg rounded-b-[32px] shadow-lg -mx-2">
         <h1 className="text-3xl font-black text-white mb-1 tracking-tight drop-shadow-sm">
           Setări
         </h1>

@@ -65,16 +65,11 @@ body {
   color: white;
 }
 
-/* Header Gradient Overlay (Top of Screen) */
+/* Header Gradient Background Style */
 .header-gradient-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100px;
   background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
-  z-index: 0;
 }
+
 
 /* Legacy Glass Support (Updated for Light Theme compatibility) */
 .card-glass {

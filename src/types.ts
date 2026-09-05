@@ -17,6 +17,8 @@ export interface AppSettings {
   workingDaysPerMonth: number;
   salaryIsGross?: boolean;
   taxRatePercent?: number;
+  grossSalary?: number; // Salariu brut de încadrare (ex: 7180 RON)
+  sporRegieFixed?: number; // Spor de regie / weekend fix (1% din salariu brut = 71.80 RON)
   // Overtime multiplier (1 = same as normal rate)
   overtimeMultiplier?: number;
   overtimePercentage?: number;

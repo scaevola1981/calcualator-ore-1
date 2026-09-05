@@ -16,11 +16,12 @@ import type { WorkSession, AppSettings } from "./types";
 import {
   splitHoursByDay,
   splitSessionByDay,
-  roundEntryTime, // P2: Use rounding utils
-  roundExitTime   // P2: Use rounding utils
+  calculateDurationWithBreak,
+  roundEntryTime,
+  roundExitTime
 } from "./utils/timeRounding";
 import { getLocalISODate } from './utils/dateUtils';
-import { LEGAL_HOLIDAYS_2025 } from './utils/holidays';
+import { LEGAL_HOLIDAYS } from './utils/holidays';
 import { useGeofencing } from './hooks/useGeofencing';
 import { initializeNotifications, notifyZoneEntry, notifyZoneExit } from './services/notifications';
 import { Preferences } from '@capacitor/preferences';
@@ -34,7 +35,7 @@ const STORAGE_KEYS = {
 
 const App: React.FC = () => {
   const [page, setPage] = useState<"home" | "history" | "settings" | "calculator">("home");
-  const [isLoading, setIsLoading] = useState(true); // P3: Loading state for startup
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- STATE MANAGEMENT ---
   const [isWorking, setIsWorking] = useState<boolean>(false);
@@ -44,16 +45,21 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>({
     normalHoursLimit: 8,
     hasNoLimit: false,
-    hourlyRate: 0,
+    hourlyRate: 26.25,
     currency: "RON",
     salaryMode: "monthly",
-    monthlySalary: 7180,
-    workingDaysPerMonth: 21,
+    monthlySalary: 4200,
+    grossSalary: 7180,
+    workingDaysPerMonth: 20,
     salaryIsGross: false,
     taxRatePercent: 0,
     overtimeMultiplier: 1,
     theme: 'light',
-    legalHolidays: LEGAL_HOLIDAYS_2025,
+    legalHolidays: LEGAL_HOLIDAYS,
+    userName: 'Florin',
+    standardAdvance: 1500,
+    mealTicketValue: 22,
+    sporRegieFixed: 71.80,
     geofencingEnabled: false,
     geofenceRadius: 400,
   });
@@ -261,13 +267,13 @@ const App: React.FC = () => {
       d.setDate(monday.getDate() + i);
       let dailyTotalHours = 0;
 
-      // Sum stored sessions
+      // Sum stored sessions cu scăderea automată a pauzei de 30 min
       workSessions.forEach(s => {
         const segs = splitSessionByDay(s);
         segs.forEach(seg => {
           const segDate = new Date(seg.startTime);
           if (segDate.toDateString() === d.toDateString()) {
-            dailyTotalHours += (new Date(seg.endTime).getTime() - new Date(seg.startTime).getTime()) / 3600000;
+            dailyTotalHours += calculateDurationWithBreak(new Date(seg.startTime), new Date(seg.endTime));
           }
         });
       });
@@ -278,7 +284,7 @@ const App: React.FC = () => {
         segs.forEach(seg => {
           const segDate = new Date(seg.startTime);
           if (segDate.toDateString() === d.toDateString()) {
-            dailyTotalHours += (new Date(seg.endTime).getTime() - new Date(seg.startTime).getTime()) / 3600000;
+            dailyTotalHours += calculateDurationWithBreak(new Date(seg.startTime), new Date(seg.endTime));
           }
         });
       }
@@ -305,19 +311,29 @@ const App: React.FC = () => {
     let totalNormal = 0;
     let totalOvertime = 0;
     const uniqueDays = new Set<string>();
+    const ticketDays = new Set<string>();
     const dailyMap: { [key: string]: number } = {};
 
     const addToMap = (start: Date, end: Date) => {
       const segs = splitSessionByDay({ startTime: start, endTime: end });
       segs.forEach(s => {
         if (new Date(s.startTime) >= startOfMonth) {
-          const k = getLocalISODate(new Date(s.startTime));
-          const h = (new Date(s.endTime).getTime() - new Date(s.startTime).getTime()) / 3600000;
+          const sDate = new Date(s.startTime);
+          const k = getLocalISODate(sDate);
+          const h = calculateDurationWithBreak(new Date(s.startTime), new Date(s.endTime));
           dailyMap[k] = (dailyMap[k] || 0) + h;
           uniqueDays.add(k);
+
+          // Condiție strictă tichete: exclusiv Luni-Vineri care NU sunt sărbători legale
+          const dayOfWeek = sDate.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          const isHoliday = (settings.legalHolidays || []).includes(k);
+          if (!isWeekend && !isHoliday && h > 0) {
+            ticketDays.add(k);
+          }
         }
       });
-    }
+    };
 
     workSessions.forEach(s => addToMap(new Date(s.startTime), new Date(s.endTime)));
     if (isWorking && startTime) addToMap(startTime, currentTime);
@@ -328,7 +344,7 @@ const App: React.FC = () => {
       totalOvertime += split.overtimeHours;
     });
 
-    return { totalNormal, totalOvertime, daysWorked: uniqueDays.size };
+    return { totalNormal, totalOvertime, daysWorked: uniqueDays.size, ticketDaysCount: ticketDays.size };
   }, [workSessions, isWorking, startTime, currentTime, settings]);
 
   // Helper
@@ -381,62 +397,60 @@ const App: React.FC = () => {
     <div id="app-root" className="min-h-screen transition-colors duration-300 bg-[#F5F7FA] dark:bg-gray-900 pb-20">
       <div className={`max-w-[450px] mx-auto min-h-screen relative shadow-2xl overflow-hidden ${settings.theme === 'dark' ? 'bg-[#0D1B2A]' : 'bg-[#F5F7FA]'}`}>
 
-        {/* GLOBAL HEADER BACKGROUND (Gradient) */}
-        <div className="header-gradient-bg dark:opacity-20 transition-opacity duration-300"></div>
-
         <div className="relative z-10 flex flex-col h-full min-h-screen">
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-1 relative">
             {page === "home" && (
-              <>
-                <div className="px-6 pt-0 pb-24 space-y-6 animate-fade-in">
-                  {/* Header Info - Blue Gradient Style */}
-                  <header className="px-6 pt-12 pb-10 mb-6 relative z-0 header-gradient-bg rounded-b-[30px] shadow-lg -mx-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h1 className="text-3xl font-black text-white tracking-tight drop-shadow-sm">
-                          Salut, {settings.userName || 'Alex'}! 👋
-                        </h1>
-                        <p className="text-white/90 font-medium text-sm mt-1 opacity-90">
-                          {new Date().toLocaleDateString("ro-RO", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
+              <div className="animate-fade-in">
+                {/* Header Info - Clean Gradient Banner */}
+                <header className="px-6 pt-12 pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm">
+                        Salut, {settings.userName || 'Alex'}! 👋
+                      </h1>
+                      <p className="text-white/90 font-medium text-xs sm:text-sm mt-1 capitalize">
+                        {new Date().toLocaleDateString("ro-RO", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
                     </div>
-                  </header>
+                  </div>
+                </header>
 
+                {/* Content Container with ample bottom padding for floating controls */}
+                <div className="px-5 pt-5 pb-44 space-y-4">
                   {/* ROW 1: Monthly Stats (Normal & Overtime) */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3.5">
                     {/* Normal Hours */}
-                    <div className="card-v6 aspect-square relative overflow-hidden rounded-[30px] p-6 flex flex-col justify-between">
-                      <div className="absolute top-0 right-0 p-4 opacity-20">
-                        <Clock size={50} className="text-white" />
+                    <div className="bg-gradient-to-br from-[#0284C7] to-[#0369A1] relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-sky-500/20 text-white flex flex-col justify-between min-h-[120px]">
+                      <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
+                        <Clock size={48} className="text-white" />
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 mb-1">
+                      <div className="relative z-10">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-sky-100 mb-1">
                           ORE NORMALE
                         </p>
-                        <h3 className="text-3xl font-black text-white tracking-tight">
+                        <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                           {formatTime(currentMonthStats.totalNormal)}
                         </h3>
                       </div>
                     </div>
 
                     {/* Overtime Hours */}
-                    <div className="card-v6 aspect-square relative overflow-hidden rounded-[30px] p-6 flex flex-col justify-between">
-                      <div className="absolute top-0 right-0 p-4 opacity-20">
-                        <Zap size={50} className="text-white" />
+                    <div className="bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-indigo-500/20 text-white flex flex-col justify-between min-h-[120px]">
+                      <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
+                        <Zap size={48} className="text-white" />
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 mb-1">
+                      <div className="relative z-10">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-100 mb-1">
                           ORE SUPLIM.
                         </p>
-                        <h3 className="text-3xl font-black text-white tracking-tight">
+                        <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                           {formatTime(currentMonthStats.totalOvertime)}
                         </h3>
                       </div>
@@ -444,30 +458,26 @@ const App: React.FC = () => {
                   </div>
 
                   {/* ROW 2: Tickets & Value (Wide Card) */}
-                  <div className="card-v6 relative overflow-hidden rounded-[30px] p-6 flex justify-between items-center h-28">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                      <Square size={80} className="text-white" />
-                    </div>
-
+                  <div className="bg-gradient-to-r from-[#0F766E] to-[#0D9488] relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-teal-500/20 text-white flex justify-between items-center min-h-[85px]">
                     {/* Left: Count */}
                     <div className="relative z-10">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 mb-1">
-                        TICHETE MASĂ
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 mb-1">
+                        TICHETE MASĂ (L-V)
                       </p>
-                      <h3 className="text-3xl font-black text-white flex items-baseline gap-1">
-                        {currentMonthStats.daysWorked}
-                        <span className="text-sm font-bold text-white/80"> Tichete</span>
+                      <h3 className="text-2xl font-black text-white flex items-baseline gap-1">
+                        {currentMonthStats.ticketDaysCount}
+                        <span className="text-sm font-bold text-teal-100"> Tichete</span>
                       </h3>
                     </div>
 
                     {/* Right: Value */}
                     <div className="text-right relative z-10">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 mb-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 mb-1">
                         VALOARE TOTALĂ
                       </p>
-                      <h3 className="text-3xl font-black text-white flex items-baseline justify-end gap-1">
-                        {currentMonthStats.daysWorked * (settings.mealTicketValue || 0)}
-                        <span className="text-sm font-bold text-white/80"> RON</span>
+                      <h3 className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
+                        {currentMonthStats.ticketDaysCount * (settings.mealTicketValue || 22)}
+                        <span className="text-sm font-bold text-teal-100"> RON</span>
                       </h3>
                     </div>
                   </div>
@@ -483,7 +493,7 @@ const App: React.FC = () => {
                   />
 
                 </div>
-              </>
+              </div>
             )}
 
             {page === "history" && (
@@ -515,25 +525,25 @@ const App: React.FC = () => {
             )}
           </main>
 
-          {/* START/STOP BUTTON (STICKY) - PROPERLY MOVED OUTSIDE ANIMATED CONTAINER */}
+          {/* START/STOP BUTTON (STICKY) */}
           {page === 'home' && (
-            <div className="fixed bottom-[98px] left-0 right-0 z-40 flex justify-center w-full px-6 pointer-events-none">
-              <div className="max-w-md w-full flex justify-center pointer-events-auto">
+            <div className="fixed bottom-[88px] left-0 right-0 z-40 flex justify-center w-full px-4 pointer-events-none">
+              <div className="max-w-[420px] w-full flex justify-center pointer-events-auto">
                 <button
                   onClick={handleStartStop}
                   className={`
-                          flex items-center gap-3 px-10 py-4
-                          rounded-full
+                          flex items-center gap-3 px-8 py-3.5
+                          rounded-full shadow-xl
                           transition-all duration-300
                           ${isWorking
-                      ? 'bg-red-500 shadow-lg shadow-red-500/40' // Stop is Red
-                      : 'bg-[#2ECC71] shadow-lg shadow-green-500/40 animate-glow-green' // Start is Vibrant Green
+                      ? 'bg-red-500 shadow-red-500/40 hover:bg-red-600'
+                      : 'bg-[#10B981] shadow-emerald-500/40 hover:bg-[#059669] animate-glow-green'
                     }
                           hover:scale-105 active:scale-95
                       `}
                 >
-                  {isWorking ? <Square fill="white" size={20} /> : <Clock strokeWidth={3} size={24} className="text-white" />}
-                  <span className="text-white font-bold text-lg tracking-wide">
+                  {isWorking ? <Square fill="white" size={18} /> : <Clock strokeWidth={2.5} size={22} className="text-white" />}
+                  <span className="text-white font-bold text-base tracking-wide">
                     {isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}
                   </span>
                 </button>
@@ -541,10 +551,10 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION (Floating Dark Navy v6.0.0) */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 m-[10px_15px]">
-            <div className="bg-[#0D1B2A] rounded-[20px] shadow-2xl pb-0 transition-all duration-300 border border-white/5">
-              <div className="flex items-center justify-around w-full h-16 px-2">
+          {/* BOTTOM NAVIGATION (Floating Dark Navy) */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-4 pb-3 pointer-events-none">
+            <div className="max-w-[420px] w-full pointer-events-auto bg-[#0D1B2A]/95 dark:bg-[#08121E]/95 backdrop-blur-md rounded-[24px] shadow-2xl border border-white/10">
+              <div className="flex items-center justify-around h-16 px-2">
                 <NavItem id="home" label="Acasă" icon={Home} />
                 <NavItem id="history" label="Istoric" icon={History} />
                 <NavItem id="calculator" label="Calcul" icon={Calculator} />
