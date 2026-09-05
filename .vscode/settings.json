@@ -1,0 +1,17 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/._*": true
+    },
+    "search.exclude": {
+        "**/._*": true
+    },
+    "css.validate": false,
+    "scss.validate": false,
+    "less.validate": false
+}

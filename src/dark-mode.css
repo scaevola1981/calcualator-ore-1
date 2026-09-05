@@ -1,0 +1,100 @@
+/* iOS Dark Mode Overrides */
+:root.dark {
+  --ios-system-background: #000000;
+  /* iOS Dark System Background */
+  --ios-card-background: #1C1C1E;
+  /* iOS Dark Card Background */
+  --ios-blue: #0A84FF;
+  /* iOS Dark Blue */
+  --ios-magenta: #FF375F;
+  /* iOS Dark Magenta */
+  --ios-gray: #98989D;
+  /* iOS Dark Secondary Label */
+  --ios-gray-light: #48484A;
+  /* iOS Dark Tertiary Label */
+  --ios-green: #32D74B;
+  /* iOS Dark Green */
+  --ios-red: #FF453A;
+  /* iOS Dark Red */
+  --ios-orange: #FF9F0A;
+  /* iOS Dark Orange */
+  --ios-text-primary: #FFFFFF;
+  /* Primary Text in Dark Mode */
+  --ios-text-secondary: #EBEBF5;
+  /* Secondary Text in Dark Mode */
+  --ios-separator: rgba(84, 84, 88, 0.65);
+  /* iOS Dark Separator */
+
+  --gradient-primary: linear-gradient(135deg, var(--ios-blue) 0%, #64D2FF 100%);
+  --gradient-accent: linear-gradient(135deg, var(--ios-magenta) 0%, #FF6482 100%);
+}
+
+.dark body {
+  background: var(--ios-system-background);
+  color: var(--ios-text-primary);
+}
+
+/* Dark Mode Components */
+.dark .card-modern {
+  background: var(--ios-card-background);
+  border-color: var(--ios-separator);
+  color: var(--ios-text-primary);
+}
+
+.dark .text-gray-900 {
+  color: var(--ios-text-primary);
+}
+
+.dark .text-gray-500 {
+  color: var(--ios-gray);
+}
+
+.dark .bg-white {
+  background-color: var(--ios-card-background);
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: #2C2C2E;
+}
+
+.dark .text-gray-700 {
+  color: var(--ios-text-secondary);
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: var(--ios-separator);
+}
+
+.dark .nav-modern {
+  background: rgba(28, 28, 30, 0.8);
+  border-color: var(--ios-separator);
+}
+
+.dark .nav-modern button span {
+  color: var(--ios-gray);
+}
+
+.dark .nav-modern button.text-blue-600 span {
+  color: var(--ios-blue);
+}
+
+/* Dark Mode Input */
+.dark .input-modern,
+.dark input[type="number"],
+.dark input[type="text"] {
+  background: var(--ios-card-background);
+  color: var(--ios-text-primary);
+  border-color: var(--ios-separator);
+}
+
+.dark input::placeholder {
+  color: var(--ios-gray);
+}
+
+/* Dark Mode Glassmorphism */
+.dark .glass {
+  background: rgba(28, 28, 30, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

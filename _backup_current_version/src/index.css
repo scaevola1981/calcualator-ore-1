@@ -1,0 +1,297 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import './dark-mode.css';
+
+@import "tailwindcss";
+
+/* Modern Design System - Styles ported from backup */
+
+:root {
+  /* --- INPUTS --- */
+  --input-bg: #E5E5EA; /* iOS Standard System Gray 5 or 6 (Light) */
+
+  /* --- TEXT --- */
+  --text-primary: #000000;   /* iOS Black */
+  --text-secondary: #3C3C43; /* iOS Label Secondary */
+  --text-muted: #8E8E93;     /* iOS Label Tertiary */
+
+  /* --- BORDURI & SEPARATORI --- */
+  --border-color: #C6C6C8;   /* iOS Separator */
+
+  /* --- CULORI DE ACCENT & STATUS --- */
+  --brand-primary: #FF00FF;  /* MAGENTA - Accent Principal */
+  --status-success: #34C759; /* iOS Green (Start) */
+  --status-danger: #FF3B30;  /* iOS Red (Stop) */
+  --status-warning: #FF9500; /* iOS Orange */
+
+  /* --- UMBRE (Shadows) --- */
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04); /* Soft iOS shadow */
+  
+  /* --- FUNDALURI (Light Mode Defaults) --- */
+  --app-bg: #F2F2F7; /* iOS System Grouped Background */
+  --card-bg: #FFFFFF;
+  
+  /* --- SPACING SYSTEM --- */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px; /* Standard spacing between small elements */
+  --spacing-lg: 24px; /* Spacing between major sections */
+  --spacing-xl: 32px; /* Large spacing (e.g. before footer) */
+  --page-padding: var(--spacing-lg); /* Global page padding */
+
+  /* --- SPACING & RADIUS --- */
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px; /* Standard iOS 20px requested */
+  --transition-base: 300ms cubic-bezier(0.25, 0.1, 0.25, 1); /* Apple-like ease */
+}
+
+/* Page Container Utility - Main wrapper for page content */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Full width children */
+  justify-content: flex-start;
+  padding: 16px;
+  gap: 20px; /* Consistent 20px gap */
+  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: 100px; /* Safe area for bottom nav */
+}
+
+/* iOS Card Style */
+.ios-card {
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  width: 100%;
+}
+
+
+
+/* 🌙 DARK MODE - iOS Dark System Colors */
+.dark {
+  /* --- FUNDALURI --- */
+  --app-bg: #000000;        /* True Black requested */
+  --card-bg: #1C1C1E;       /* iOS System Gray 6 Dark */
+  --input-bg: #2C2C2E;      /* iOS System Gray 5 Dark */
+
+  /* --- TEXT --- */
+  --text-primary: #FFFFFF;
+  --text-secondary: #EBEBF5; /* iOS Dark Label Secondary */
+  --text-muted: #98989D;     /* iOS Dark Label Tertiary */
+
+  /* --- BORDURI --- */
+  --border-color: #38383A;  /* iOS Dark Separator */
+
+  /* --- ACCENTE --- */
+  --brand-primary: #FF00FF; /* Magenta stays */
+  --status-success: #32D74B;/* iOS Dark Green */
+  --status-danger: #FF453A; /* iOS Dark Red */
+  
+  /* Shadow reduced in dark mode */
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--app-bg);
+  background-image: none; /* Reset gradient */
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* Component Styles */
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+  padding-bottom: 80px; /* Space for bottom nav */
+}
+
+/* Modern Card Style */
+.card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-base);
+  margin-bottom: 1rem;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Modern Button Style */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: none;
+  font-size: 1rem;
+  background-color: transparent; /* Default bg */
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background-color: var(--brand-primary);
+  background-image: none; /* Remove gradient */
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+}
+
+/* Inputs */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: all var(--transition-base);
+  font-family: inherit;
+}
+
+input:focus, select:focus {
+  background-color: var(--card-bg); /* Or keep input-bg */
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: var(--card-bg);
+  /* Optional: maintain some transparency if desired, or stick to solid for better contrast */
+  /* backdrop-filter: blur(20px); - removed for consistency with solid theme or re-add if supported */
+  border-top: 1px solid var(--border-color);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  font-size: 0.75rem;
+  flex: 1;
+  padding: 5px;
+  transition: color 0.3s;
+}
+
+.nav-item.active {
+  color: #FF00FF; /* Magenta */
+}
+
+.nav-item.active svg {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
+
+/* Calendar Customization */
+.react-calendar {
+  background: transparent !important;
+  border: none !important;
+  width: 100% !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.react-calendar__tile {
+  padding: 10px 0 !important;
+  font-weight: 500;
+}
+
+.react-calendar__tile--now {
+  background: transparent !important;
+  border: 2px solid #FF00FF !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.react-calendar__tile--active {
+  background: #FF00FF !important;
+  border-radius: var(--radius-md) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(255, 0, 255, 0.3);
+}
+
+.react-calendar__navigation button {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+}
+
+/* Utilities */
+.text-gradient {
+  background: var(--gradient-text-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* App Shell */
+.app-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

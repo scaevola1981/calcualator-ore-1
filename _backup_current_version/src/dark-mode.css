@@ -1,0 +1,108 @@
+/* Dark Mode Overrides */
+:root.dark {
+  --color-primary-from: #0891b2; /* Cyan-700 */
+  --color-primary-to: #2563eb; /* Blue-600 */
+  --gradient-primary: linear-gradient(135deg, #0e7490 0%, #1d4ed8 100%);
+}
+
+.dark body {
+  background: linear-gradient(180deg, #020617 0%, #0f172a 100%); /* Slate 950 to Slate 900 */
+  color: #f1f5f9;
+}
+
+/* Dark Mode Components */
+.dark .card {
+  background: rgba(15, 23, 42, 0.95); /* Darker card background */
+  border-color: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9;
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8;
+}
+
+.dark .bg-white {
+  background-color: #1e293b;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: #334155;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1;
+}
+
+.dark .border-gray-100, .dark .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .nav-modern {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .nav-modern button span {
+    color: #94a3b8;
+}
+.dark .nav-modern button.text-blue-600 span {
+    color: #60a5fa;
+}
+
+/* Dark Mode Input */
+.dark .input-modern,
+.dark input[type="number"],
+.dark input[type="text"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark select {
+    background: #334155;
+    color: white;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark input::placeholder {
+    color: #94a3b8;
+}
+
+/* Variable Overrides */
+:root.dark {
+  --color-surface-hover: #334155;
+  --color-text-secondary: #94a3b8;
+}
+
+/* React Calendar Dark Mode */
+.dark .react-calendar {
+    color: #cbd5e1 !important;
+}
+
+.dark .react-calendar__tile {
+    color: #cbd5e1 !important;
+}
+
+.dark .react-calendar__tile:enabled:hover,
+.dark .react-calendar__tile:enabled:focus {
+    background-color: #334155 !important;
+}
+
+.dark .react-calendar__navigation button {
+    color: #f1f5f9 !important;
+}
+
+.dark .react-calendar__navigation button:disabled {
+    color: #475569 !important;
+}
+
+.dark .react-calendar__month-view__days__day--neighboringMonth {
+    color: #475569 !important;
+}
+
+/* Fix generic buttons */
+.dark .btn {
+    color: #f1f5f9;
+}
