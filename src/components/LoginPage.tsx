@@ -39,7 +39,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div className="inline-block p-4 bg-blue-600 rounded-3xl mb-4">
                 <Clock className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">Contor Ore</h1>
+            <h1 className="text-4xl font-bold text-gray-900">Calculator Ore</h1>
             <p className="text-gray-500 mt-2">Autentificați-vă pentru a continua.</p>
         </div>
 

@@ -8,6 +8,7 @@ import {
   Calendar as CalendarIcon,
   X,
   Plus,
+  Trash2,
 } from "lucide-react";
 import {
   calculateEffectiveHourlyRate,
@@ -353,46 +354,46 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         </p>
       </header>
 
-      {/* 1. Grand Summary Card - Natural Flow (No Negative Margin) */}
-      <div className="card-v6 p-6 rounded-[30px] shadow-xl dark:shadow-black/50 relative overflow-hidden mx-4 mb-8 transition-all duration-300 z-20">
+      {/* 1. Grand Summary Card */}
+      <div className="bg-gradient-to-r from-[#0284C7] to-[#0072FF] dark:from-[#0C3058] dark:to-[#123E6E] p-6 rounded-[28px] shadow-lg dark:shadow-black/40 border border-sky-400/30 dark:border-white/10 relative overflow-hidden mx-2 mb-4 text-white transition-all duration-300 z-20">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-        <div className="flex items-center gap-3 mb-6 relative z-10">
-          <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-md border border-white/20 shadow-inner">
+        <div className="flex items-center gap-3 mb-4 relative z-10">
+          <div className="bg-white/20 dark:bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/20 dark:border-white/10 shadow-inner">
             <BookOpen className="w-6 h-6 text-white" />
           </div>
-          <h2 className="text-lg font-bold text-white text-shadow-sm tracking-wide">
+          <h2 className="text-lg font-bold text-white tracking-wide">
             {hasActiveFilters ? "Total (Filtrat)" : "Total General"}
           </h2>
         </div>
 
-        <div className="text-center p-3 relative z-10">
-          <p className="text-4xl font-black text-white text-shadow-sm">
+        <div className="text-center p-2 relative z-10">
+          <p className="text-4xl font-black text-white">
             {formatHoursMinutes(grandTotals.total)}
           </p>
-          <p className="text-sm font-medium text-white/80 mt-1">Total Ore</p>
+          <p className="text-xs font-medium text-white/80 mt-1 uppercase tracking-wider">Total Ore</p>
         </div>
       </div>
 
-      {/* 2. Calendar - Blue Gradient Background */}
-      <div className="card-v6 backdrop-blur-xl border border-white/20 p-6 rounded-[30px] shadow-xl dark:shadow-black/50 mx-2 transition-all duration-300 relative overflow-hidden z-10">
+      {/* 2. Calendar */}
+      <div className="bg-white dark:bg-[#132337]/85 backdrop-blur-xl border border-gray-100 dark:border-white/10 p-6 rounded-[28px] shadow-md dark:shadow-black/40 mx-2 transition-all duration-300 relative overflow-hidden z-10">
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mb-8 relative z-10">
+        <div className="flex items-center justify-between mb-6 relative z-10">
           <button
             onClick={handlePrevMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-all text-white backdrop-blur-sm shadow-sm"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition-all text-gray-700 dark:text-white"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
 
-          <h3 className="font-bold text-xl text-white capitalize tracking-wide text-shadow-sm">
+          <h3 className="font-bold text-xl text-gray-900 dark:text-white capitalize tracking-wide">
             {getMonthName(currentMonth)}
           </h3>
 
           <button
             onClick={handleNextMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-all text-white backdrop-blur-sm shadow-sm"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition-all text-gray-700 dark:text-white"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -400,11 +401,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
         {/* Grid */}
         <div className="relative z-10">
-          <div className="grid grid-cols-7 mb-4">
+          <div className="grid grid-cols-7 mb-3">
             {weekDays.map((day, index) => (
               <div
                 key={`${day}-${index}`}
-                className="h-8 flex items-center justify-center text-sm font-bold text-white/90"
+                className="h-8 flex items-center justify-center text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider"
               >
                 {day}
               </div>
@@ -422,23 +423,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               const hasData = sessionsByDate.has(dateKey);
               const isHoliday = settings.legalHolidays?.includes(dateKey);
 
-              // Priority Logic:
-              // 1. Has Data -> RED (Always)
-              // 2. Selected (No Data) -> GREEN
-              // 3. Today -> White (Blue Text)
-              // 4. Highlighted (Holiday) -> Red Tint
-              // 5. Default -> White Text (on Blue Gradient)
-
-              let dayClasses = "text-white hover:bg-white/10"; // Default
+              let dayClasses = "text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"; // Default
 
               if (hasData) {
-                dayClasses = "bg-[#FF3B30] text-white shadow-lg border border-red-500/50 relative overflow-hidden";
+                dayClasses = "bg-[#FF3B30] text-white shadow-md shadow-red-500/20 border border-red-500/50 relative overflow-hidden";
               } else if (isSelected) {
-                dayClasses = "bg-[#2ECC71] text-white shadow-lg scale-105 rounded-full ring-4 ring-white/20"; // Green for Selected Empty
+                dayClasses = "bg-[#2ECC71] text-white shadow-md shadow-emerald-500/20 scale-105 rounded-xl ring-2 ring-emerald-400/40";
               } else if (isToday) {
-                dayClasses = "bg-white text-[#0072FF] shadow-md font-extrabold border-2 border-white";
+                dayClasses = "bg-blue-50 dark:bg-sky-950/60 text-blue-600 dark:text-sky-300 border-2 border-blue-500 dark:border-sky-400 font-black shadow-sm";
               } else if (isHoliday) {
-                dayClasses = "bg-white/15 text-white border-2 border-yellow-400/80 shadow-md";
+                dayClasses = "bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border-2 border-amber-400/60 shadow-sm";
               }
 
               return (
@@ -446,7 +440,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   key={index}
                   onClick={() => setSelectedDate(date)}
                   className={`
-                      relative h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-300
+                      relative h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200
                       ${dayClasses}
                   `}
                   title={isHoliday ? "Sărbătoare Legală în România 🇷🇴" : undefined}
@@ -473,15 +467,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         </div>
       </div>
 
-
-
       {/* 3. Selected Day Details Card - Only shows when a date is selected */}
-      {/* 3. Selected Day Details Card - Blue Gradient + Black Text */}
       {selectedDate && (
-        <div className="card-v6 rounded-[30px] overflow-hidden animate-slide-up shadow-xl dark:shadow-black/50 mx-2 mt-6 relative z-20">
-          <div className="p-4 border-b border-black/10 bg-white/10 flex justify-between items-center">
+        <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] overflow-hidden animate-slide-up shadow-md dark:shadow-black/40 backdrop-blur-xl mx-2 mt-4 p-5 relative z-20">
+          <div className="border-b border-gray-100 dark:border-white/10 pb-4 flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-bold text-black capitalize text-shadow-none">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
                 {selectedDate.toLocaleDateString("ro-RO", {
                   weekday: "long",
                   day: "numeric",
@@ -491,15 +482,15 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             </div>
             {selectedDaySummary && (
               <div className="text-right">
-                <p className="text-xs text-black/70 font-semibold">Total</p>
-                <p className="text-lg font-black text-black">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Total</p>
+                <p className="text-lg font-black text-gray-900 dark:text-white">
                   {formatHoursMinutes(selectedDaySummary.totalHours)}
                 </p>
               </div>
             )}
           </div>
 
-          <div className="p-4">
+          <div className="pt-4">
             {/* Add Session Button */}
             <button
               onClick={() => {
@@ -510,20 +501,20 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 setEndMinute("00");
                 setShowAddModal(true);
               }}
-              className="w-full mb-6 py-3 bg-[#2ECC71] text-white font-bold rounded-[20px] shadow-lg shadow-green-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-[#27AE60] border border-white/20"
+              className="w-full mb-5 py-3 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-2xl shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
               Adaugă Sesiune Manual
             </button>
             {selectedDaySummary ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Stats */}
                 {settings.hasNoLimit && (
-                  <div className="bg-white/60 backdrop-blur-md p-3 rounded-lg border border-white/40 mb-4 shadow-sm">
-                    <span className="text-xs text-gray-800 block mb-1 font-bold">
+                  <div className="bg-gray-50 dark:bg-white/5 p-3.5 rounded-2xl border border-gray-100 dark:border-white/5 mb-3">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 block mb-0.5 font-bold">
                       Venit Estimat
                     </span>
-                    <span className="text-lg font-black text-black">
+                    <span className="text-lg font-black text-gray-900 dark:text-white">
                       {selectedDaySummary.dailyPay.toLocaleString("ro-RO", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -535,27 +526,27 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
                 {/* Session List */}
                 <div>
-                  <h4 className="text-sm font-bold text-black mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-black" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-500" />
                     Sesiuni Înregistrate
                   </h4>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2.5">
                     {selectedDaySummary.sessions.map((session, index) => (
                       <li
                         key={index}
-                        className="flex items-center justify-between p-4 bg-white/40 backdrop-blur-md border border-white/50 shadow-sm rounded-2xl hover:bg-white/60 transition-all duration-200 group"
+                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-sm rounded-2xl transition-all group"
                       >
                         <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-black/70 uppercase tracking-wider">
+                          <span className="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             Sesiunea {index + 1}
                           </span>
-                          <div className="flex items-center gap-2 text-black">
-                            <Clock className="w-5 h-5 text-black" />
-                            <span className="text-xl font-black tracking-tight">
+                          <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className="text-lg font-black tracking-tight">
                               {formatTime(new Date(session.startTime))} - {formatTime(new Date(session.endTime))}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-700 font-semibold mt-0.5">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                             Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(new Date(session.startTime), new Date(session.endTime)))} (pauză 30m inclusă)
                           </span>
                         </div>
@@ -563,27 +554,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                           onClick={() => {
                             onDeleteSession(session.originalIndex);
                           }}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-all duration-200 hover:scale-110 active:scale-95"
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all"
                           title="Șterge sesiunea"
                           aria-label="Șterge sesiunea"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </li>
                     ))}
@@ -591,12 +566,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/30 text-black">
-                  <CalendarIcon className="w-8 h-8 text-black/50" />
+              <div className="py-6 text-center">
+                <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400">
+                  <CalendarIcon className="w-6 h-6" />
                 </div>
-                <p className="text-black font-black text-lg">Nicio sesiune înregistrată</p>
-                <p className="text-sm text-black/60 mt-1 font-medium">
+                <p className="text-gray-900 dark:text-white font-bold text-base">Nicio sesiune înregistrată</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Nu există ore înregistrate pentru această zi.
                 </p>
               </div>
@@ -613,52 +588,52 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               className="absolute inset-0 bg-black/60 backdrop-blur-md"
               onClick={() => setShowAddModal(false)}
             />
-            <div className="relative bg-white/10 backdrop-blur-2xl rounded-[30px] shadow-2xl border border-white/20 p-6 w-full max-w-sm animate-fade-in-up">
+            <div className="relative bg-white dark:bg-[#132337] backdrop-blur-2xl rounded-[30px] shadow-2xl border border-gray-100 dark:border-white/15 p-6 w-full max-w-sm animate-fade-in-up">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   Adaugă Sesiune
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors"
+                  className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
                   aria-label="Închide fereastra"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <p className="text-sm text-white/80 mb-6 font-medium bg-white/10 p-3 rounded-xl border border-white/10 text-center">
+              <p className="text-sm text-gray-600 dark:text-white/80 mb-6 font-medium bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/10 text-center">
                 📅 {selectedDate?.toLocaleDateString("ro-RO", { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
 
               <div className="space-y-4">
                 {/* Start Time Selector */}
                 <div>
-                  <label className="block text-sm font-bold text-white mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
                     Ora Început
                   </label>
                   <div className="flex gap-2">
                     <select
                       value={startHour}
                       onChange={(e) => setStartHour(e.target.value)}
-                      className="w-full p-3 bg-white text-slate-800 border-none rounded-xl focus:ring-4 focus:ring-white/30 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
+                      className="w-full p-3 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
                       aria-label="Ora de început"
                     >
                       {Array.from({ length: 24 }).map((_, i) => {
                         const val = String(i).padStart(2, "0");
-                        return <option key={val} value={val}>{val}</option>;
+                        return <option key={val} value={val} className="bg-white dark:bg-[#132337] text-gray-900 dark:text-white">{val}</option>;
                       })}
                     </select>
-                    <span className="text-2xl font-bold text-white/50 self-center">:</span>
+                    <span className="text-2xl font-bold text-gray-400 dark:text-white/40 self-center">:</span>
                     <select
                       value={startMinute}
                       onChange={(e) => setStartMinute(e.target.value)}
-                      className="w-full p-3 bg-white text-slate-800 border-none rounded-xl focus:ring-4 focus:ring-white/30 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
+                      className="w-full p-3 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
                       aria-label="Minutul de început"
                     >
                       {Array.from({ length: 12 }).map((_, i) => { // 0, 5, 10... 55
                         const val = String(i * 5).padStart(2, "0");
-                        return <option key={val} value={val}>{val}</option>;
+                        return <option key={val} value={val} className="bg-white dark:bg-[#132337] text-gray-900 dark:text-white">{val}</option>;
                       })}
                     </select>
                   </div>
@@ -666,44 +641,44 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
                 {/* End Time Selector */}
                 <div>
-                  <label className="block text-sm font-bold text-white mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
                     Ora Sfârșit
                   </label>
                   <div className="flex gap-2">
                     <select
                       value={endHour}
                       onChange={(e) => setEndHour(e.target.value)}
-                      className="w-full p-3 bg-white text-slate-800 border-none rounded-xl focus:ring-4 focus:ring-white/30 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
+                      className="w-full p-3 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
                       aria-label="Ora de sfârșit"
                     >
                       {Array.from({ length: 24 }).map((_, i) => {
                         const val = String(i).padStart(2, "0");
-                        return <option key={val} value={val}>{val}</option>;
+                        return <option key={val} value={val} className="bg-white dark:bg-[#132337] text-gray-900 dark:text-white">{val}</option>;
                       })}
                     </select>
-                    <span className="text-2xl font-bold text-white/50 self-center">:</span>
+                    <span className="text-2xl font-bold text-gray-400 dark:text-white/40 self-center">:</span>
                     <select
                       value={endMinute}
                       onChange={(e) => setEndMinute(e.target.value)}
-                      className="w-full p-3 bg-white text-slate-800 border-none rounded-xl focus:ring-4 focus:ring-white/30 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
+                      className="w-full p-3 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-lg appearance-none font-bold text-center"
                       aria-label="Minutul de sfârșit"
                     >
                       {Array.from({ length: 12 }).map((_, i) => {
                         const val = String(i * 5).padStart(2, "0");
-                        return <option key={val} value={val}>{val}</option>;
+                        return <option key={val} value={val} className="bg-white dark:bg-[#132337] text-gray-900 dark:text-white">{val}</option>;
                       })}
                     </select>
                   </div>
                 </div>
 
                 {preview && (
-                  <div className={`p-4 rounded-xl border ${preview.isOvernight ? 'bg-purple-500/20 border-purple-300/30' : 'bg-white/10 border-white/20'}`}>
+                  <div className={`p-4 rounded-xl border ${preview.isOvernight ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'}`}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-white/80 font-medium">Durată calculată:</span>
-                      <span className="text-lg font-bold text-white">{preview.h}h {preview.m > 0 ? `${preview.m}m` : ''}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">Durată calculată:</span>
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">{preview.h}h {preview.m > 0 ? `${preview.m}m` : ''}</span>
                     </div>
                     {preview.isOvernight && (
-                      <div className="flex items-center gap-2 text-xs font-semibold text-purple-200 bg-purple-500/20 p-2 rounded-lg mt-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 p-2 rounded-lg mt-2">
                         <span>🌙</span>
                         <span>Tura de noapte (+1 zi)</span>
                       </div>
@@ -712,21 +687,15 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 )}
 
                 {errorMessage && (
-                  <div className="p-3 bg-red-500/20 border border-red-500/30 text-white text-sm rounded-xl flex items-center gap-2 font-bold shadow-lg">
-                    <div className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.5)]" />
+                  <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 text-sm rounded-xl flex items-center gap-2 font-bold">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
                     {errorMessage}
                   </div>
                 )}
 
-                {!settings.hasNoLimit && (
-                  <p className="text-xs text-white/70 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
-                    ℹ️ Se vor aplica regulile automate de rotunjire (intrare: 30min, ieșire: oră fixă).
-                  </p>
-                )}
-
                 <button
                   onClick={handleSaveManualSession}
-                  className="w-full py-4 bg-white text-blue-600 font-[800] rounded-xl shadow-xl shadow-black/10 active:scale-95 transition-all mt-4 text-lg hover:bg-white/90"
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all mt-4 text-base"
                 >
                   Salvează Sesiunea
                 </button>

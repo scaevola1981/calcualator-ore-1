@@ -69,7 +69,7 @@ export const DayNightChart: React.FC<DayNightChartProps> = ({ workSessions, curr
       <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
         {/* Chart */}
         <div className="w-48 h-48 relative">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+          <ResponsiveContainer width="100%" height={192} minWidth={0} minHeight={192}>
             <PieChart>
               <Pie
                 data={data}

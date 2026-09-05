@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.contor.ore',
-  appName: 'TicTocWork',
+  appName: 'Calculator Ore',
   webDir: 'dist',
   android: {
     allowMixedContent: true,

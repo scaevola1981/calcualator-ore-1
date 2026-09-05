@@ -2,14 +2,10 @@
 
 /* Tailwind CSS */
 @import "tailwindcss";
-
-/* Leaflet Map Styles */
 @import 'leaflet/dist/leaflet.css';
-
-/* Import Google Font - Inter */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-@import './dark-mode.css';
-/* Keeping this for safety, but overriding for specific home page style */
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
@@ -68,10 +64,15 @@ body {
 /* Header Gradient Background Style */
 .header-gradient-bg {
   background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+  transition: background 0.3s ease;
 }
 
+.dark .header-gradient-bg {
+  background: linear-gradient(135deg, #0F2238 0%, #162E4C 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
 
-/* Legacy Glass Support (Updated for Light Theme compatibility) */
+/* Legacy Glass Support */
 .card-glass {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
@@ -83,50 +84,37 @@ body {
 }
 
 /* Glassmorphism v6.0.0 */
-/* Glassmorphism v6.0.0 */
 .glass-card,
 .card-modern {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px;
-  /* Ensure rounded corners for modern cards */
 }
 
 .dark .glass-card,
 .dark .card-modern {
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* V6.0.0 Specific Card Style */
+/* V6.0.0 Card Style - Theme Adaptive */
 .card-v6 {
-  background: var(--card-gradient) !important;
+  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
   box-shadow: 0 10px 20px rgba(0, 114, 255, 0.2);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
 }
 
 .dark .card-v6 {
-  /* Keep consistant across themes for now unless requested */
+  background: rgba(19, 35, 55, 0.85) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+  color: white !important;
 }
 
-/* V6.0.0 Specific Card Style */
-.card-v6 {
-  background: var(--card-gradient) !important;
-  box-shadow: 0 10px 20px rgba(0, 114, 255, 0.2);
-  border: none;
-  color: white;
-}
-
-.dark .card-v6 {
-  /* Optional: if dark mode needs to be different, but prompt implies 'all cards'. 
-     We can keep it blue or revert to glass. 
-     For now, we stick to the prompt's variable usage which implies consistent gradient 
-     unless variable changes (which it doesn't in .dark yet).
-     However, standard dark mode usually averts bright blue cards.
-     Let's implicitly trust the user wants the "Vibrant Blue" look.
-  */
-}
 
 /* Animations */
 @keyframes fadeIn {

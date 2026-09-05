@@ -236,8 +236,8 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               onClick={() => setActiveTab('calculator')}
               className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                 activeTab === 'calculator'
-                  ? 'bg-white text-blue-600 shadow-md scale-105'
-                  : 'text-white hover:bg-white/10'
+                  ? 'bg-white text-blue-600 dark:bg-blue-600 dark:text-white shadow-md scale-105'
+                  : 'text-white/80 hover:bg-white/10'
               }`}
             >
               Simulator Salariu
@@ -247,7 +247,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeTab === 'audit'
                   ? 'bg-amber-400 text-gray-900 shadow-md scale-105'
-                  : 'text-white hover:bg-white/10'
+                  : 'text-white/80 hover:bg-white/10'
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
@@ -261,13 +261,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
         /* ================= TAB 1: SIMULATOR SALARIU ================= */
         <div className="px-4 space-y-5">
           {/* CARD REZULTAT: TOTAL REST DE PLATĂ */}
-          <div className="relative overflow-hidden rounded-[28px] p-6 text-white shadow-xl bg-gradient-to-br from-[#0072FF] to-[#00C6FF] border border-white/20">
+          <div className="relative overflow-hidden rounded-[28px] p-6 text-white shadow-xl dark:shadow-black/40 bg-gradient-to-br from-[#0072FF] to-[#00C6FF] dark:from-[#0C3058] dark:to-[#123E6E] border border-white/20 dark:border-white/10 transition-all">
             <div className="relative z-10">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">
+                <span className="text-xs font-bold text-white/80 dark:text-sky-200/80 uppercase tracking-widest">
                   ESTIMARE REST DE PLATĂ (LICHIDARE)
                 </span>
-                <span className="bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold">
+                <span className="bg-white/20 dark:bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold">
                   {standardWorkingDays} zile lucrătoare
                 </span>
               </div>
@@ -275,7 +275,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                 {restDePlataCalculat.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 <span className="text-2xl font-normal ml-2 opacity-90">{settings.currency}</span>
               </h2>
-              <p className="text-xs text-white/80 font-medium">
+              <p className="text-xs text-white/80 dark:text-sky-100/70 font-medium">
                 Calculat din: Venit net ({totalVenitNet.toFixed(2)} RON) - Avans ({extras.advance} RON) - Tichete ({incomeTicketsTotal} RON).
               </p>
             </div>
@@ -320,7 +320,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               </div>
             </div>
 
-            <div className="mt-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 text-xs flex justify-between items-center font-medium">
+            <div className="mt-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-blue-800 dark:text-sky-300 text-xs flex justify-between items-center font-medium">
               <span>Tarif orar de bază ({salaryNet} ÷ ({standardWorkingDays}z × 8h)):</span>
               <strong className="text-sm font-bold font-mono">{hourlyRate.toFixed(2)} RON/h</strong>
             </div>
@@ -458,16 +458,16 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
         /* ================= TAB 2: MODULUL DE AUDIT FINANCIAR („MECANISMUL FABRICII”) ================= */
         <div className="px-4 space-y-5">
           {/* INTRODUCTORY CARD */}
-          <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[28px] p-6 text-white shadow-xl border border-white/10">
+          <div className="bg-white dark:bg-[#132337] rounded-[28px] p-6 shadow-md border border-gray-100 dark:border-white/10 transition-all">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400">
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">
                 <ShieldAlert className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                   Audit Financiar & Fluturaș Fabrică
                 </h2>
-                <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-1 leading-relaxed">
                   Fabrica folosește artificiul contabil de a declara jumătate din orele suplimentare la <strong>200%</strong> (pentru a se încadra în plafonul legal). Introdu datele de pe fluturaș pentru reconciliere automată.
                 </p>
               </div>

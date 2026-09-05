@@ -93,7 +93,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
 
       <div className="w-full h-[220px]">
         {isMounted ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
             <BarChart
               data={data}
               margin={{ top: 10, right: 10, left: -20, bottom: 5 }}

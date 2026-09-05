@@ -427,12 +427,12 @@ const App: React.FC = () => {
                   {/* ROW 1: Monthly Stats (Normal & Overtime) */}
                   <div className="grid grid-cols-2 gap-3.5">
                     {/* Normal Hours */}
-                    <div className="bg-gradient-to-br from-[#0284C7] to-[#0369A1] relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-sky-500/20 text-white flex flex-col justify-between min-h-[120px]">
+                    <div className="bg-gradient-to-br from-[#0284C7] to-[#0369A1] dark:from-[#0C3058] dark:to-[#082240] dark:border dark:border-sky-500/20 relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-sky-500/20 dark:shadow-none text-white flex flex-col justify-between min-h-[120px] transition-all">
                       <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
                         <Clock size={48} className="text-white" />
                       </div>
                       <div className="relative z-10">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-sky-100 mb-1">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-sky-100 dark:text-sky-300 mb-1">
                           ORE NORMALE
                         </p>
                         <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -442,12 +442,12 @@ const App: React.FC = () => {
                     </div>
 
                     {/* Overtime Hours */}
-                    <div className="bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-indigo-500/20 text-white flex flex-col justify-between min-h-[120px]">
+                    <div className="bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] dark:from-[#3B1F75] dark:to-[#2A1556] dark:border dark:border-purple-500/20 relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-indigo-500/20 dark:shadow-none text-white flex flex-col justify-between min-h-[120px] transition-all">
                       <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
                         <Zap size={48} className="text-white" />
                       </div>
                       <div className="relative z-10">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-100 mb-1">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-100 dark:text-purple-300 mb-1">
                           ORE SUPLIM.
                         </p>
                         <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -458,26 +458,26 @@ const App: React.FC = () => {
                   </div>
 
                   {/* ROW 2: Tickets & Value (Wide Card) */}
-                  <div className="bg-gradient-to-r from-[#0F766E] to-[#0D9488] relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-teal-500/20 text-white flex justify-between items-center min-h-[85px]">
+                  <div className="bg-gradient-to-r from-[#0F766E] to-[#0D9488] dark:from-[#0A3D38] dark:to-[#072B28] dark:border dark:border-teal-500/20 relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-teal-500/20 dark:shadow-none text-white flex justify-between items-center min-h-[85px] transition-all">
                     {/* Left: Count */}
                     <div className="relative z-10">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 mb-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 dark:text-teal-300 mb-1">
                         TICHETE MASĂ (L-V)
                       </p>
                       <h3 className="text-2xl font-black text-white flex items-baseline gap-1">
                         {currentMonthStats.ticketDaysCount}
-                        <span className="text-sm font-bold text-teal-100"> Tichete</span>
+                        <span className="text-sm font-bold text-teal-100 dark:text-teal-300"> Tichete</span>
                       </h3>
                     </div>
 
                     {/* Right: Value */}
                     <div className="text-right relative z-10">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 mb-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 dark:text-teal-300 mb-1">
                         VALOARE TOTALĂ
                       </p>
                       <h3 className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
                         {currentMonthStats.ticketDaysCount * (settings.mealTicketValue || 22)}
-                        <span className="text-sm font-bold text-teal-100"> RON</span>
+                        <span className="text-sm font-bold text-teal-100 dark:text-teal-300"> RON</span>
                       </h3>
                     </div>
                   </div>
