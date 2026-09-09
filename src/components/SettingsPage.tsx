@@ -4,10 +4,6 @@ import {
   Moon,
   DollarSign,
   MapPin,
-  HelpCircle,
-  Clock,
-  Compass,
-  CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 import type { AppSettings } from '../types';
@@ -274,6 +270,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
             <MapPin className="w-5 h-5" />
             <span>{isCapturingLocation ? 'Se capturează GPS...' : 'Setează Punct de Lucru'}</span>
           </button>
+
+          {permissionError && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl text-amber-800 dark:text-amber-300 text-xs font-medium">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-500" />
+              <span>
+                {permissionError === 'denied'
+                  ? 'Accesul la locație a fost refuzat. S-au folosit coordonate implicite (București) pe care le poți ajusta pe hartă.'
+                  : 'Nu s-a putut obține locația GPS exactă. S-au folosit coordonate implicite pe care le poți ajusta pe hartă.'}
+              </span>
+            </div>
+          )}
 
           {/* Locație Activă */}
           <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 text-center">
