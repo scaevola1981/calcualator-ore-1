@@ -24,10 +24,13 @@ export const TodaySessionsCard: React.FC<TodaySessionsCardProps> = ({ sessions }
                       <Clock className="w-4 h-4 text-gray-400"/>
                       Sesiunea {index + 1}
                     </div>
-                    <div className="font-mono text-gray-800 text-xs">
+                    <div className="font-mono text-gray-800 text-xs flex items-center gap-1">
                         <span>{formatTime(new Date(session.startTime))}</span>
-                        <span className="mx-1">-</span>
+                        <span>-</span>
                         <span>{formatTime(new Date(session.endTime))}</span>
+                        {new Date(session.endTime).getDate() !== new Date(session.startTime).getDate() && (
+                          <span className="text-[10px] text-indigo-600 font-bold">(+1)</span>
+                        )}
                     </div>
                   </li>
               ))}

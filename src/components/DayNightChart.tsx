@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Moon, Sun } from 'lucide-react';
-import { calculateNightHours, splitSessionByDay } from '../utils/timeRounding';
+import { calculateNightHours } from '../utils/timeRounding';
 import type { WorkSession } from '../types';
 
 interface DayNightChartProps {
@@ -28,21 +28,15 @@ export const DayNightChart: React.FC<DayNightChartProps> = ({ workSessions, curr
       // Ensure valid dates
       if (!session.startTime || !session.endTime) return;
 
-      // Use consistent splitting logic as HistoryPage
-      const segments = splitSessionByDay({
-        startTime: new Date(session.startTime),
-        endTime: new Date(session.endTime)
-      });
+      const sStart = new Date(session.startTime);
+      const sEnd = new Date(session.endTime);
 
-      segments.forEach(seg => {
-        // Filter by month (consistent with "Selected Month" view)
-        if (seg.startTime.getMonth() === targetMonth && seg.startTime.getFullYear() === targetYear) {
-          const duration = (seg.endTime.getTime() - seg.startTime.getTime()) / (1000 * 60 * 60);
-          const night = calculateNightHours(seg.startTime, seg.endTime);
-          totalAll += duration;
-          totalNight += night;
-        }
-      });
+      if (sStart.getMonth() === targetMonth && sStart.getFullYear() === targetYear) {
+        const duration = (sEnd.getTime() - sStart.getTime()) / (1000 * 60 * 60);
+        const night = calculateNightHours(sStart, sEnd);
+        totalAll += duration;
+        totalNight += night;
+      }
     });
 
     const totalDay = Math.max(0, totalAll - totalNight);

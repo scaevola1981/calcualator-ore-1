@@ -14,7 +14,6 @@ import {
   calculateEffectiveHourlyRate,
   calculateSalary,
   calculateDurationWithBreak,
-  splitSessionByDay,
 } from "../utils/timeRounding";
 import { getLocalISODate } from '../utils/dateUtils';
 
@@ -23,7 +22,7 @@ interface HistoryPageProps {
   settings: AppSettings;
   todaySessions: WorkSession[];
   formatHoursMinutes: (hours: number) => string;
-  onDeleteSession: (index: number) => void;
+  onDeleteSession: (identifier: string | number) => void;
   onAddSession: (session: WorkSession) => void;
   onSettingsChange: (settings: AppSettings) => void;
   addNotification?: (message: string) => void;
@@ -107,31 +106,33 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     if (endFilter) endFilter.setHours(23, 59, 59, 999);
 
     workSessions.forEach((session, index) => {
-      // split session across days, so each date gets its portion
-      const segments = splitSessionByDay({ startTime: new Date(session.startTime), endTime: new Date(session.endTime) });
-      for (const seg of segments) {
-        const d = new Date(seg.startTime);
+      const sStart = new Date(session.startTime);
+      const sEnd = new Date(session.endTime);
 
-        // --- DATE RANGE FILTER ---
-        if (startFilter && d < startFilter) continue;
-        if (endFilter && d > endFilter) continue;
+      // --- DATE RANGE FILTER ---
+      if (startFilter && sStart < startFilter) return;
+      if (endFilter && sStart > endFilter) return;
 
-        const key = getDateKey(d);
+      const key = getDateKey(sStart);
 
-        if (!map.has(key)) {
-          map.set(key, {
-            // Use local ISO date string instead of UTC-shifted toISOString()
-            date: getLocalISODate(d),
-            sessions: [],
-            totalHours: 0,
-            normalHours: 0,
-            overtimeHours: 0,
-            dailyPay: 0,
-          });
-        }
-        // Attach original index to the segment
-        map.get(key)!.sessions.push({ ...seg, originalIndex: index });
+      if (!map.has(key)) {
+        map.set(key, {
+          // Use local ISO date string instead of UTC-shifted toISOString()
+          date: getLocalISODate(sStart),
+          sessions: [],
+          totalHours: 0,
+          normalHours: 0,
+          overtimeHours: 0,
+          dailyPay: 0,
+        });
       }
+      // Attach original index and session details
+      map.get(key)!.sessions.push({
+        ...session,
+        startTime: sStart,
+        endTime: sEnd,
+        originalIndex: index,
+      });
     });
 
     // Calculate totals and Apply Type Filter
@@ -531,37 +532,56 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     Sesiuni Înregistrate
                   </h4>
                   <ul className="space-y-2.5">
-                    {selectedDaySummary.sessions.map((session, index) => (
-                      <li
-                        key={index}
-                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-sm rounded-2xl transition-all group"
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">
-                            Sesiunea {index + 1}
-                          </span>
-                          <div className="flex items-center gap-2 text-gray-900 dark:text-white">
-                            <Clock className="w-4 h-4 text-blue-500" />
-                            <span className="text-lg font-black tracking-tight">
-                              {formatTime(new Date(session.startTime))} - {formatTime(new Date(session.endTime))}
+                    {selectedDaySummary.sessions.map((session, index) => {
+                      const sStart = new Date(session.startTime);
+                      const sEnd = new Date(session.endTime);
+                      const isOvernight = sEnd.getDate() !== sStart.getDate() ||
+                        (sEnd.getTime() - sStart.getTime() > 18 * 3600000);
+
+                      return (
+                        <li
+                          key={session.id || index}
+                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 shadow-sm rounded-2xl transition-all group"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider">
+                                Sesiunea {index + 1}
+                              </span>
+                              {isOvernight && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                  🌙 Tură de noapte (+1 zi)
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-900 dark:text-white">
+                              <Clock className="w-4 h-4 text-blue-500" />
+                              <span className="text-lg font-black tracking-tight">
+                                {formatTime(sStart)} - {formatTime(sEnd)}
+                              </span>
+                              {isOvernight && (
+                                <span className="text-xs font-semibold text-indigo-500 dark:text-indigo-400">
+                                  (+1 zi)
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                              Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(sStart, sEnd))} (pauză 30m inclusă)
                             </span>
                           </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                            Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(new Date(session.startTime), new Date(session.endTime)))} (pauză 30m inclusă)
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            onDeleteSession(session.originalIndex);
-                          }}
-                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all"
-                          title="Șterge sesiunea"
-                          aria-label="Șterge sesiunea"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </li>
-                    ))}
+                          <button
+                            onClick={() => {
+                              onDeleteSession(session.id || session.originalIndex);
+                            }}
+                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all"
+                            title="Șterge sesiunea"
+                            aria-label="Șterge sesiunea"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </div>

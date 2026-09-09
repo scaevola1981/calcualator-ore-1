@@ -36,8 +36,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
         maximumAge: 0
       });
 
-      const { latitude, longitude } = position.coords;
-      setTempCoordinates({ lat: latitude, lng: longitude });
+      const lat = Number.isFinite(position?.coords?.latitude)
+        ? position.coords.latitude
+        : (Number.isFinite(settings.gateLatitude) ? settings.gateLatitude! : 44.4268);
+      const lng = Number.isFinite(position?.coords?.longitude)
+        ? position.coords.longitude
+        : (Number.isFinite(settings.gateLongitude) ? settings.gateLongitude! : 26.1025);
+      setTempCoordinates({ lat, lng });
       setShowMapModal(true);
     } catch (err: any) {
       console.error('Error getting location:', err);
@@ -46,9 +51,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
       } else {
         setPermissionError('generic');
       }
+      const fallbackLat = Number.isFinite(settings.gateLatitude) ? settings.gateLatitude! : 44.4268;
+      const fallbackLng = Number.isFinite(settings.gateLongitude) ? settings.gateLongitude! : 26.1025;
       setTempCoordinates({
-        lat: settings.gateLatitude || 44.4268,
-        lng: settings.gateLongitude || 26.1025
+        lat: fallbackLat,
+        lng: fallbackLng
       });
       setShowMapModal(true);
     } finally {
@@ -56,11 +63,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
     }
   };
 
-  const handleMapConfirm = (lat: number, lng: number) => {
+  const handleMapConfirm = (lat: number, lng: number, radius?: number) => {
     onSettingsChange({
       ...settings,
       gateLatitude: lat,
       gateLongitude: lng,
+      geofenceRadius: radius || settings.geofenceRadius || 400,
       geofencingEnabled: true
     });
     setShowMapModal(false);
@@ -322,8 +330,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
       {showMapModal && tempCoordinates && (
         <GeofenceMapModal
           isOpen={showMapModal}
+          currentLat={tempCoordinates.lat}
+          currentLng={tempCoordinates.lng}
           initialLat={tempCoordinates.lat}
           initialLng={tempCoordinates.lng}
+          initialRadius={settings.geofenceRadius || 400}
           radius={settings.geofenceRadius || 400}
           onConfirm={handleMapConfirm}
           onCancel={handleMapCancel}

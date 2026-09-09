@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, Popup } from 'react-leaflet';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Circle, Popup, useMapEvents } from 'react-leaflet';
 import { X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -12,29 +12,89 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-interface GeofenceMapModalProps {
+export interface GeofenceMapModalProps {
     isOpen: boolean;
-    currentLat: number;
-    currentLng: number;
-    initialRadius: number;
+    currentLat?: number;
+    currentLng?: number;
+    initialLat?: number;
+    initialLng?: number;
+    initialRadius?: number;
+    radius?: number;
     onConfirm: (lat: number, lng: number, radius: number) => void;
     onCancel: () => void;
+}
+
+function MapEventsHandler({ onPositionChange }: { onPositionChange: (lat: number, lng: number) => void }) {
+    useMapEvents({
+        click(e) {
+            if (e.latlng && Number.isFinite(e.latlng.lat) && Number.isFinite(e.latlng.lng)) {
+                onPositionChange(e.latlng.lat, e.latlng.lng);
+            }
+        },
+    });
+    return null;
 }
 
 export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
     isOpen,
     currentLat,
     currentLng,
+    initialLat,
+    initialLng,
     initialRadius,
+    radius,
     onConfirm,
     onCancel,
 }) => {
-    const [radius, setRadius] = useState(initialRadius);
+    // Robust coordinate resolution with safe fallback
+    const resolvedLat = Number.isFinite(currentLat)
+        ? (currentLat as number)
+        : Number.isFinite(initialLat)
+        ? (initialLat as number)
+        : 44.4268;
+
+    const resolvedLng = Number.isFinite(currentLng)
+        ? (currentLng as number)
+        : Number.isFinite(initialLng)
+        ? (initialLng as number)
+        : 26.1025;
+
+    const resolvedRadius = Number.isFinite(initialRadius)
+        ? (initialRadius as number)
+        : Number.isFinite(radius)
+        ? (radius as number)
+        : 400;
+
+    const [position, setPosition] = useState<[number, number]>([resolvedLat, resolvedLng]);
+    const [zoneRadius, setZoneRadius] = useState<number>(resolvedRadius);
+
+    useEffect(() => {
+        setPosition([resolvedLat, resolvedLng]);
+    }, [resolvedLat, resolvedLng]);
+
+    useEffect(() => {
+        setZoneRadius(resolvedRadius);
+    }, [resolvedRadius]);
+
+    const markerEventHandlers = useMemo(
+        () => ({
+            dragend(e: any) {
+                const marker = e.target;
+                if (marker != null) {
+                    const latLng = marker.getLatLng();
+                    if (latLng && Number.isFinite(latLng.lat) && Number.isFinite(latLng.lng)) {
+                        setPosition([latLng.lat, latLng.lng]);
+                    }
+                }
+            },
+        }),
+        []
+    );
 
     if (!isOpen) return null;
 
     const handleConfirm = () => {
-        onConfirm(currentLat, currentLng, radius);
+        onConfirm(position[0], position[1], zoneRadius);
     };
 
     return (
@@ -48,7 +108,7 @@ export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
                             🗺️ Configurează Agent ZONA
                         </h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Ajustează raza zonei tale de lucru
+                            Ajustează poziția porții și raza zonei de lucru
                         </p>
                     </div>
                     <button
@@ -64,7 +124,7 @@ export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
                 <div className="p-6 space-y-6 pb-24">
                     <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 border-gray-200 dark:border-gray-700">
                         <MapContainer
-                            center={[currentLat, currentLng]}
+                            center={position}
                             zoom={16}
                             style={{ height: '300px', width: '100%' }}
                             zoomControl={true}
@@ -75,28 +135,44 @@ export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
 
-                            {/* Marker pentru poziția curentă */}
-                            <Marker position={[currentLat, currentLng]}>
-                                <Popup>
-                                    <div className="text-center">
-                                        <div className="text-lg font-bold">📍 Tu ești aici!</div>
-                                        <div className="text-sm text-gray-600">Poarta ta de lucru</div>
-                                    </div>
-                                </Popup>
-                            </Marker>
-
-                            {/* Cerc pentru geofence */}
-                            <Circle
-                                center={[currentLat, currentLng]}
-                                radius={radius}
-                                pathOptions={{
-                                    color: '#007AFF',
-                                    fillColor: '#007AFF',
-                                    fillOpacity: 0.15,
-                                    weight: 3,
-                                }}
+                            <MapEventsHandler
+                                onPositionChange={(newLat, newLng) => setPosition([newLat, newLng])}
                             />
+
+                            {Number.isFinite(position[0]) && Number.isFinite(position[1]) && (
+                                <>
+                                    {/* Marker pentru poziția de lucru - dragabil */}
+                                    <Marker
+                                        position={position}
+                                        draggable={true}
+                                        eventHandlers={markerEventHandlers}
+                                    >
+                                        <Popup>
+                                            <div className="text-center">
+                                                <div className="text-lg font-bold">📍 Poarta de lucru</div>
+                                                <div className="text-xs text-gray-600">Trage de pin sau atinge harta pentru repoziționare</div>
+                                            </div>
+                                        </Popup>
+                                    </Marker>
+
+                                    {/* Cerc pentru geofence */}
+                                    <Circle
+                                        center={position}
+                                        radius={zoneRadius || 400}
+                                        pathOptions={{
+                                            color: '#007AFF',
+                                            fillColor: '#007AFF',
+                                            fillOpacity: 0.15,
+                                            weight: 3,
+                                        }}
+                                    />
+                                </>
+                            )}
                         </MapContainer>
+                    </div>
+
+                    <div className="text-center text-xs font-mono text-gray-500 dark:text-gray-400">
+                        Coordonate selectate: {position[0].toFixed(5)}, {position[1].toFixed(5)}
                     </div>
 
                     {/* Slider pentru rază */}
@@ -106,7 +182,7 @@ export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
                                 Rază zonă
                             </label>
                             <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                {radius}m
+                                {zoneRadius}m
                             </span>
                         </div>
 
@@ -117,8 +193,8 @@ export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
                                 min="100"
                                 max="1000"
                                 step="50"
-                                value={radius}
-                                onChange={(e) => setRadius(Number(e.target.value))}
+                                value={zoneRadius}
+                                onChange={(e) => setZoneRadius(Number(e.target.value))}
                                 className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer
                   [&::-webkit-slider-thumb]:appearance-none
                   [&::-webkit-slider-thumb]:w-6
@@ -145,8 +221,7 @@ export const GeofenceMapModal: React.FC<GeofenceMapModalProps> = ({
 
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                             <p className="text-sm text-blue-800 dark:text-blue-200">
-                                💡 <strong>Sfat:</strong> Setează raza astfel încât să includă întreaga zonă unde lucrezi.
-                                Pontajul va porni automat când intri în acest cerc.
+                                💡 <strong>Sfat:</strong> Poți trage de pin sau atinge harta pentru a poziționa exact poarta. Setează raza astfel încât să includă întreaga zonă unde lucrezi.
                             </p>
                         </div>
                     </div>

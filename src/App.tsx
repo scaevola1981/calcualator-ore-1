@@ -15,7 +15,6 @@ import { CalculatorPage } from "./components/CalculatorPage";
 import type { WorkSession, AppSettings } from "./types";
 import {
   splitHoursByDay,
-  splitSessionByDay,
   calculateDurationWithBreak,
   roundEntryTime,
   roundExitTime
@@ -97,6 +96,7 @@ const App: React.FC = () => {
         const { value: sessionsVal } = await Preferences.get({ key: STORAGE_KEYS.WORK_SESSIONS });
         if (sessionsVal) {
           const sessions = JSON.parse(sessionsVal).map((s: any) => ({
+            id: s.id || `${new Date(s.startTime).getTime()}-${Math.random().toString(36).substring(2, 9)}`,
             startTime: new Date(s.startTime),
             endTime: new Date(s.endTime),
             modeFlag: s.modeFlag ?? false,
@@ -187,7 +187,13 @@ const App: React.FC = () => {
       if (isWorking && settings.geofencingEnabled && startTime) {
         const now = new Date();
         const roundedEnd = roundExitTime(now); // Rounding applied
-        setWorkSessions(prev => [...prev, { startTime: startTime, endTime: roundedEnd, modeFlag: settings.hasNoLimit }]);
+        const newSession: WorkSession = {
+          id: `${new Date(startTime).getTime()}-${Math.random().toString(36).substring(2, 9)}`,
+          startTime: startTime,
+          endTime: roundedEnd,
+          modeFlag: settings.hasNoLimit,
+        };
+        setWorkSessions(prev => [...prev, newSession]);
         setIsWorking(false);
         setStartTime(null);
         notifyZoneExit(settings.userName || 'Prietene', startTime);
@@ -212,21 +218,14 @@ const App: React.FC = () => {
       const now = new Date();
       const roundedEnd = roundExitTime(now); // Apply rounding
 
-      // Note: We do NOT deduct the break here in the raw session storage.
-      // Usually breaks are deducted during *calculation* of paying hours, not by modifying the timestamps.
-      // However, if the user sees "8 hours" in history, it should reflect the break deduction?
-      // The `calculateNightHours` and other utils in HistoryPage likely iterate over these sessions.
-      // The `calculateDurationWithBreak` util I added should be used in HistoryPage or wherever totals are summed.
-      // We store the "Attendance Time" (Start -> End). Break is a deduction rule applied later.
+      const newSession: WorkSession = {
+        id: `${new Date(startTime).getTime()}-${Math.random().toString(36).substring(2, 9)}`,
+        startTime: startTime,
+        endTime: roundedEnd,
+        modeFlag: settings.hasNoLimit,
+      };
 
-      setWorkSessions((prev) => [
-        ...prev,
-        {
-          startTime: startTime,
-          endTime: roundedEnd,
-          modeFlag: settings.hasNoLimit,
-        },
-      ]);
+      setWorkSessions((prev) => [...prev, newSession]);
       setStartTime(null);
       setIsWorking(false);
       setShowStopConfirmation(false);
@@ -239,14 +238,26 @@ const App: React.FC = () => {
   }, []);
 
   const handleManualAddSession = (session: { startTime: Date; endTime: Date }) => {
-    // Manual add should also probably respect rounding? 
-    // Usually manual entry via inputs gives exact 00/30/15 depending on UI.
-    // We'll trust the input or apply rounding if needed.
-    // The Modal uses `roundEntryTime` / `roundExitTime` inside HistoryPage potentially?
-    // Let's enforce it here just in case, ensuring consistency.
     const rStart = roundEntryTime(session.startTime);
     const rEnd = roundExitTime(session.endTime);
-    setWorkSessions(prev => [...prev, { startTime: rStart, endTime: rEnd, modeFlag: settings.hasNoLimit }]);
+    const newSession: WorkSession = {
+      id: `${new Date(rStart).getTime()}-${Math.random().toString(36).substring(2, 9)}`,
+      startTime: rStart,
+      endTime: rEnd,
+      modeFlag: settings.hasNoLimit,
+    };
+    setWorkSessions(prev => [...prev, newSession]);
+  };
+
+  const handleDeleteSession = (identifier: string | number) => {
+    setWorkSessions(prev => {
+      if (typeof identifier === 'string') {
+        return prev.filter(s => s.id !== identifier);
+      }
+      const newSessions = [...prev];
+      newSessions.splice(identifier, 1);
+      return newSessions;
+    });
   };
 
   // --- CALCULATIONS ---
@@ -267,26 +278,20 @@ const App: React.FC = () => {
       d.setDate(monday.getDate() + i);
       let dailyTotalHours = 0;
 
-      // Sum stored sessions cu scăderea automată a pauzei de 30 min
+      // Sum stored sessions cu scăderea automată a pauzei de 30 min (atribuite la ziua în care a început schimbul)
       workSessions.forEach(s => {
-        const segs = splitSessionByDay(s);
-        segs.forEach(seg => {
-          const segDate = new Date(seg.startTime);
-          if (segDate.toDateString() === d.toDateString()) {
-            dailyTotalHours += calculateDurationWithBreak(new Date(seg.startTime), new Date(seg.endTime));
-          }
-        });
+        const sDate = new Date(s.startTime);
+        if (sDate.toDateString() === d.toDateString()) {
+          dailyTotalHours += calculateDurationWithBreak(new Date(s.startTime), new Date(s.endTime));
+        }
       });
 
-      // Add active session if "Same Day"
+      // Add active session if shift started on this day
       if (isWorking && startTime) {
-        const segs = splitSessionByDay({ startTime, endTime: currentTime });
-        segs.forEach(seg => {
-          const segDate = new Date(seg.startTime);
-          if (segDate.toDateString() === d.toDateString()) {
-            dailyTotalHours += calculateDurationWithBreak(new Date(seg.startTime), new Date(seg.endTime));
-          }
-        });
+        const sDate = new Date(startTime);
+        if (sDate.toDateString() === d.toDateString()) {
+          dailyTotalHours += calculateDurationWithBreak(new Date(startTime), new Date(currentTime));
+        }
       }
 
       const { normalHours, overtimeHours } = splitHoursByDay(
@@ -315,24 +320,21 @@ const App: React.FC = () => {
     const dailyMap: { [key: string]: number } = {};
 
     const addToMap = (start: Date, end: Date) => {
-      const segs = splitSessionByDay({ startTime: start, endTime: end });
-      segs.forEach(s => {
-        if (new Date(s.startTime) >= startOfMonth) {
-          const sDate = new Date(s.startTime);
-          const k = getLocalISODate(sDate);
-          const h = calculateDurationWithBreak(new Date(s.startTime), new Date(s.endTime));
-          dailyMap[k] = (dailyMap[k] || 0) + h;
-          uniqueDays.add(k);
+      const sDate = new Date(start);
+      if (sDate >= startOfMonth) {
+        const k = getLocalISODate(sDate);
+        const h = calculateDurationWithBreak(new Date(start), new Date(end));
+        dailyMap[k] = (dailyMap[k] || 0) + h;
+        uniqueDays.add(k);
 
-          // Condiție strictă tichete: exclusiv Luni-Vineri care NU sunt sărbători legale
-          const dayOfWeek = sDate.getDay();
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-          const isHoliday = (settings.legalHolidays || []).includes(k);
-          if (!isWeekend && !isHoliday && h > 0) {
-            ticketDays.add(k);
-          }
+        // Condiție strictă tichete: exclusiv Luni-Vineri care NU sunt sărbători legale
+        const dayOfWeek = sDate.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const isHoliday = (settings.legalHolidays || []).includes(k);
+        if (!isWeekend && !isHoliday && h > 0) {
+          ticketDays.add(k);
         }
-      });
+      }
     };
 
     workSessions.forEach(s => addToMap(new Date(s.startTime), new Date(s.endTime)));
@@ -503,11 +505,7 @@ const App: React.FC = () => {
                 formatHoursMinutes={formatHoursMinutes}
                 todaySessions={workSessions.filter(s => new Date(s.startTime).toDateString() === new Date().toDateString())}
                 onAddSession={handleManualAddSession} // Use wrapper to apply rounding
-                onDeleteSession={(index) => {
-                  const newSessions = [...workSessions];
-                  newSessions.splice(index, 1);
-                  setWorkSessions(newSessions);
-                }}
+                onDeleteSession={handleDeleteSession}
                 addNotification={addNotification}
                 onSettingsChange={setSettings}
               />

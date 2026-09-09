@@ -1,5 +1,6 @@
 
 export interface WorkSession {
+  id?: string;
   startTime: Date;
   endTime: Date;
   modeFlag?: boolean; // Legacy - kept for compatibility, always false
