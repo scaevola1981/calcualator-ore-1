@@ -19,19 +19,11 @@ export const roundExitTime = (date: Date): Date => {
 };
 
 /**
- * Calculează durata efectivă scăzând automat exact 30 minute de pauză de masă.
+ * Calculează durata efectivă de lucru (timpul total lucrat, fără scădere de pauză).
  */
 export const calculateDurationWithBreak = (start: Date, end: Date): number => {
   const diffMs = new Date(end).getTime() - new Date(start).getTime();
-  let hours = diffMs / (1000 * 60 * 60);
-
-  // Scade automat exact 30 min (0.5 ore) din fiecare sesiune zilnică lucrată
-  if (hours > 0.5) {
-    hours -= 0.5;
-  } else {
-    hours = 0;
-  }
-
+  const hours = diffMs / (1000 * 60 * 60);
   return Math.max(0, hours);
 };
 

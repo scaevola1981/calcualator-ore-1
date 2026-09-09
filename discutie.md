@@ -19,7 +19,7 @@ Document de referință complet pentru dezvoltarea și reconstrucția aplicație
 ## 2. Motorul de Timp și Înregistrare
 
 * **Rotunjire Timp:** FĂRĂ rotunjire la intrare/ieșire (se înregistrează timpul real de lucru).
-* **Pauză de Masă:** Se scade automat **exact 30 de minute** din fiecare sesiune zilnică lucrată.
+* **Pauză de Masă:** NU se mai scade automat jumătatea de oră din ziua de lucru (utilizatorul o lucrează în plus pentru a nu fi scăzută, se contorizează 100% timpul pontat).
 * **Zile de Lucru Standard:** Luni - Vineri (normă întreagă: 8h/zi).
 * **Sărbători & Weekend:** Orice oră lucrată în weekend (Sâmbătă/Duminică) sau în zilele de Sărbătoare Legală reprezintă timp suplimentar integral.
 

@@ -566,7 +566,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                               )}
                             </div>
                             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                              Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(sStart, sEnd))} (pauză 30m inclusă)
+                              Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(sStart, sEnd))}
                             </span>
                           </div>
                           <button
