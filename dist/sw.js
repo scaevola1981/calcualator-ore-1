@@ -30,6 +30,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const url = event.request.url;
+  // Ignore unsupported schemes (chrome-extension://, ws://, etc.)
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+
+  // Ignore Vite dev server requests
+  if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('/@vite/') || url.includes('/@fs/') || url.includes('/src/')) {
+    return;
+  }
+
   // Handle SPA navigation requests
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -45,12 +54,12 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
         }
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
+          cache.put(event.request, responseToCache).catch(() => {});
         });
         return networkResponse;
       }).catch(() => {
