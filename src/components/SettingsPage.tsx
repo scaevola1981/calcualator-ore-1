@@ -4,7 +4,8 @@ import {
   Moon,
   DollarSign,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  RotateCw
 } from 'lucide-react';
 import type { AppSettings } from '../types';
 import type { GeofencingState } from '../hooks/useGeofencing';
@@ -388,6 +389,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
             </div>
           </div>
         </div>
+      </div>
+
+      {/* RESET / REFRESH APP BUTTON */}
+      <div className="pt-2">
+        <button
+          onClick={() => {
+            if ('caches' in window) {
+              caches.keys().then(names => names.forEach(n => caches.delete(n)));
+            }
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+            }
+            window.location.reload();
+          }}
+          className="w-full py-3.5 px-4 rounded-2xl bg-white/5 dark:bg-white/5 hover:bg-white/10 border border-white/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm"
+        >
+          <RotateCw size={16} />
+          <span>Reîmprospătează Aplicația & Curăță Cache</span>
+        </button>
       </div>
 
       {/* VERSION FOOTER */}
