@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Moon, Sun } from 'lucide-react';
+import { Moon } from 'lucide-react';
 import { calculateNightHours } from '../utils/timeRounding';
 import type { WorkSession } from '../types';
 
@@ -10,12 +10,6 @@ interface DayNightChartProps {
 }
 
 export const DayNightChart: React.FC<DayNightChartProps> = ({ workSessions, currentMonth }) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
 
   const data = useMemo(() => {
     let totalNight = 0;
@@ -80,7 +74,7 @@ export const DayNightChart: React.FC<DayNightChartProps> = ({ workSessions, curr
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => [`${value}h`, '']}
+                formatter={(value: any) => [`${value ?? 0}h`, '']}
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
               />
             </PieChart>

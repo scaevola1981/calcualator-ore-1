@@ -8,10 +8,7 @@ import {
   Moon,
   Zap,
   Ticket,
-  ShieldAlert,
-  ArrowRight,
-  TrendingUp,
-  Info
+  ShieldAlert
 } from 'lucide-react';
 import type { AppSettings, WorkSession } from '../types';
 import { getLocalISODate } from '../utils/dateUtils';

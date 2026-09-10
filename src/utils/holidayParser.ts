@@ -2,12 +2,10 @@
 // - parseDatesFromText: extract ISO date strings from OCR/text input
 // - parseDatesFromImageFile: run Tesseract.js OCR on an image File and parse dates
 
-import { parse, isValid, formatISO } from 'date-fns';
+import { formatISO } from 'date-fns';
 
 const numericDatePatterns = [
-  // 2025-12-15 or 2025/12/15
   /\b(\d{4})[-\/]?(\d{1,2})[-\/]?(\d{1,2})\b/g,
-  // 15.12.2025 or 15/12/2025 or 15-12-2025
   /\b(\d{1,2})[\.\-\/]?(\d{1,2})[\.\-\/]?(\d{4})\b/g,
 ];
 
@@ -15,10 +13,6 @@ const monthNamesRO: Record<string, number> = {
   ianuarie: 1, februarie: 2, martie: 3, aprilie: 4, mai: 5, iunie: 6,
   iulie: 7, august: 8, septembrie: 9, octombrie: 10, noiembrie: 11, decembrie: 12,
 };
-
-function pad(n: number) {
-  return n < 10 ? `0${n}` : `${n}`;
-}
 
 export function parseDatesFromText(text: string, defaultYear?: number): string[] {
   const results = new Set<string>();
@@ -80,6 +74,7 @@ export function parseDatesFromText(text: string, defaultYear?: number): string[]
 // OCR-based parsing using tesseract.js in browser
 export async function parseDatesFromImageFile(file: File, defaultYear?: number): Promise<string[]> {
   // Dynamically import to keep bundle small when unused
+  // @ts-ignore
   const { createWorker } = await import('tesseract.js');
   const worker = await createWorker({ logger: () => {} });
   try {

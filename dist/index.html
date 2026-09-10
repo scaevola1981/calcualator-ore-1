@@ -16,15 +16,41 @@
     <meta name="description" content="Contor de ore muncă, pontaj fabrică, simulator salariu și audit fluturaș" />
 
     <title>Calculator Ore</title>
-    <script type="module" crossorigin src="/assets/index-D0J3cMxT.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-B1T1YpmT.css">
+    <script>
+      (function() {
+        const CURRENT_VERSION = 'v6.2.2-20260910-force';
+        const lastVersion = localStorage.getItem('__app_version_ts__');
+        if (lastVersion !== CURRENT_VERSION) {
+          localStorage.setItem('__app_version_ts__', CURRENT_VERSION);
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              names.forEach(function(name) { caches.delete(name); });
+            });
+          }
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              regs.forEach(function(r) { r.unregister(); });
+            });
+          }
+          if (lastVersion) {
+            window.location.reload();
+          }
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DbBhE6HP.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DS-_-5XI.css">
   </head>
   <body>
     <div id="root"></div>
     <script>
       if ('serviceWorker' in navigator) {
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          // Curățare Service Worker în mediul local de dezvoltare pentru a nu bloca Vite HMR
+        const isLocalDev = window.location.hostname === 'localhost' ||
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.port === '5173' ||
+                           window.location.hostname.startsWith('192.168.') ||
+                           window.location.hostname.startsWith('10.');
+        if (isLocalDev) {
           navigator.serviceWorker.getRegistrations().then((registrations) => {
             for (const registration of registrations) {
               registration.unregister();

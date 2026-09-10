@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calculator-ore-v1';
+const CACHE_NAME = 'calculator-ore-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -10,10 +10,9 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
 });
 
@@ -31,40 +30,34 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = event.request.url;
-  // Ignore unsupported schemes (chrome-extension://, ws://, etc.)
   if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
-  // Ignore Vite dev server requests
-  if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('/@vite/') || url.includes('/@fs/') || url.includes('/src/')) {
+  // Ignore Vite dev server requests completely
+  if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes(':5173') || url.includes('/@vite/') || url.includes('/@fs/') || url.includes('/src/')) {
     return;
   }
 
-  // Handle SPA navigation requests
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
-    );
-    return;
-  }
-
-  // Cache-first for assets, network fallback
+  // Network first strategy: always try network first so user gets latest code immediately
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache).catch(() => {});
+          });
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache).catch(() => {});
-        });
         return networkResponse;
-      }).catch(() => {
-        // Return nothing or cached fallback
-      });
-    })
+      })
+      .catch(() => {
+        // Fallback to cache when offline
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return new Response('Offline', { status: 503 });
+        });
+      })
   );
 });

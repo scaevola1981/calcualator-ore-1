@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, User, KeyRound, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;

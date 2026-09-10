@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { Geolocation, Position, CallbackID } from '@capacitor/geolocation';
 
 export interface GeofenceConfig {
     latitude: number;
@@ -7,15 +8,18 @@ export interface GeofenceConfig {
     enabled: boolean;
 }
 
-interface GeofencingState {
+export interface GeofencingState {
     isInZone: boolean;
     currentDistance: number | null;
+    accuracy: number | null;
     lastPosition: { lat: number; lng: number } | null;
+    status: 'idle' | 'tracking' | 'error';
     error: string | null;
+    refreshPosition: () => Promise<void>;
 }
 
 // Calculate distance between two points using Haversine formula
-function calculateDistance(
+export function calculateDistance(
     lat1: number,
     lon1: number,
     lat2: number,
@@ -39,157 +43,256 @@ export const useGeofencing = (
     config: GeofenceConfig,
     onEnterZone?: () => void,
     onExitZone?: () => void
-) => {
-    const [state, setState] = useState<GeofencingState>({
+): GeofencingState => {
+    const [state, setState] = useState<{
+        isInZone: boolean;
+        currentDistance: number | null;
+        accuracy: number | null;
+        lastPosition: { lat: number; lng: number } | null;
+        status: 'idle' | 'tracking' | 'error';
+        error: string | null;
+    }>({
         isInZone: false,
         currentDistance: null,
+        accuracy: null,
         lastPosition: null,
+        status: 'idle',
         error: null,
     });
 
-    const watchIdRef = useRef<string | null>(null);
-    const lastKnownZoneState = useRef(false);
+    const watchIdRef = useRef<CallbackID | null>(null);
+    const intervalIdRef = useRef<any>(null);
+    const lastKnownZoneState = useRef<boolean | null>(null);
 
-    // Refs for callbacks to avoid re-subscribing when they change
+    // Refs for latest callbacks to prevent stale closures
     const onEnterZoneRef = useRef(onEnterZone);
     const onExitZoneRef = useRef(onExitZone);
+    const configRef = useRef(config);
 
-    // Permanent denial flag to prevent spam
-    const permissionDeniedRef = useRef(false);
-
-    // Update refs on every render
     useEffect(() => {
         onEnterZoneRef.current = onEnterZone;
         onExitZoneRef.current = onExitZone;
-    }, [onEnterZone, onExitZone]);
+        configRef.current = config;
+    }, [onEnterZone, onExitZone, config]);
 
-    const checkPosition = useCallback(
-        (position: GeolocationPosition) => {
-            if (!position?.coords) return;
+    // Handle a new position reading
+    const handleNewPosition = useCallback((position: Position | GeolocationPosition) => {
+        if (!position?.coords) return;
 
-            const currentLat = position.coords.latitude;
-            const currentLng = position.coords.longitude;
+        const currentLat = position.coords.latitude;
+        const currentLng = position.coords.longitude;
+        const accuracy = position.coords.accuracy ?? null;
+        const targetLat = configRef.current.latitude;
+        const targetLng = configRef.current.longitude;
+        const targetRadius = configRef.current.radius || 400;
 
-            // Calculate distance from geofence center
-            const distance = calculateDistance(
-                config.latitude,
-                config.longitude,
-                currentLat,
-                currentLng
-            );
+        if (!targetLat || !targetLng) return;
 
-            // Debounce log or reduce spam? For now, we keep it but it might be verbose.
-            // console.log('[Agent ZONA] Distance:', Math.round(distance), 'm');
+        const distance = calculateDistance(
+            targetLat,
+            targetLng,
+            currentLat,
+            currentLng
+        );
 
-            const wasInZone = lastKnownZoneState.current;
-            const isNowInZone = distance <= config.radius;
+        const roundedDistance = Math.round(distance);
+        const isNowInZone = distance <= targetRadius;
+        const previousZoneState = lastKnownZoneState.current;
 
-            setState({
-                isInZone: isNowInZone,
-                currentDistance: Math.round(distance),
-                lastPosition: { lat: currentLat, lng: currentLng },
-                error: null,
-            });
+        console.log(`[Agent ZONA GPS] Distanță: ${roundedDistance}m (Rază: ${targetRadius}m, Acuratețe: ${accuracy ? Math.round(accuracy) : '?'}m, În zonă: ${isNowInZone})`);
 
-            // Trigger callbacks on zone transitions using refs
-            if (!wasInZone && isNowInZone) {
-                console.log('[Agent ZONA] → Intrare în zonă');
-                onEnterZoneRef.current?.();
-            } else if (wasInZone && !isNowInZone) {
-                console.log('[Agent ZONA] ← Ieșire din zonă');
-                onExitZoneRef.current?.();
-            }
+        setState(prev => ({
+            ...prev,
+            isInZone: isNowInZone,
+            currentDistance: roundedDistance,
+            accuracy: accuracy ? Math.round(accuracy) : null,
+            lastPosition: { lat: currentLat, lng: currentLng },
+            status: 'tracking',
+            error: null,
+        }));
 
+        // Transition logic:
+        if (previousZoneState === null) {
+            // First time receiving position
             lastKnownZoneState.current = isNowInZone;
-        },
-        [config.latitude, config.longitude, config.radius]
-    );
+            if (isNowInZone) {
+                console.log('[Agent ZONA GPS] 🟢 Detectat inițial în zonă -> Pornire pontaj');
+                onEnterZoneRef.current?.();
+            }
+        } else if (!previousZoneState && isNowInZone) {
+            // Transition: Outside -> Inside
+            console.log('[Agent ZONA GPS] 🟢 Intrare în zonă de lucru -> Pornire pontaj');
+            lastKnownZoneState.current = true;
+            onEnterZoneRef.current?.();
+        } else if (previousZoneState && !isNowInZone) {
+            // Transition: Inside -> Outside
+            console.log('[Agent ZONA GPS] 🔴 Ieșire din zonă de lucru -> Oprire pontaj');
+            lastKnownZoneState.current = false;
+            onExitZoneRef.current?.();
+        }
+    }, []);
+
+    // Manual or programmatic position refresh
+    const refreshPosition = useCallback(async () => {
+        if (!configRef.current.enabled || !configRef.current.latitude || !configRef.current.longitude) return;
+
+        try {
+            const pos = await Geolocation.getCurrentPosition({
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 3000,
+            });
+            handleNewPosition(pos);
+        } catch (err: any) {
+            console.warn('[Agent ZONA GPS] Refresh getCurrentPosition eroare:', err);
+            // Fallback to browser geolocation if Capacitor fails
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (p) => handleNewPosition(p),
+                    (e) => console.warn('[Agent ZONA GPS] Fallback browser eroare:', e.message),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+                );
+            }
+        }
+    }, [handleNewPosition]);
 
     useEffect(() => {
-        // Stop if not enabled
-        if (!config.enabled) {
+        let isMounted = true;
+
+        const clearCurrentWatchers = async () => {
             if (watchIdRef.current) {
-                const numericId = parseInt(watchIdRef.current, 10);
-                if (!isNaN(numericId)) navigator.geolocation.clearWatch(numericId);
-                watchIdRef.current = null;
-            }
-            setState({ isInZone: false, currentDistance: null, lastPosition: null, error: null });
-            return;
-        }
-
-        // Stop if permission was previously denied
-        if (permissionDeniedRef.current) {
-            console.warn('[Agent ZONA] Monitorizare oprită permanent (Permisiune refuzată anterior).');
-            return;
-        }
-
-        // Validate coordinates
-        if (!config.latitude || !config.longitude) {
-            setState(s => ({ ...s, error: 'Coordonate invalide' }));
-            return;
-        }
-
-        const startWatching = async () => {
-            if (!navigator.geolocation) {
-                setState(s => ({ ...s, error: 'Geolocația nu este suportată' }));
-                return;
-            }
-
-            console.log('[Agent ZONA] Inițializare monitorizare GPS...');
-
-            // Clear existing
-            if (watchIdRef.current) {
-                navigator.geolocation.clearWatch(parseInt(watchIdRef.current, 10));
-                watchIdRef.current = null;
-            }
-
-            const watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    checkPosition(position);
-                },
-                (err) => {
-                    // Handle specific errors
-                    if (err.code === 1) { // PERMISSION_DENIED
-                        console.error('[Agent ZONA] Permisiune refuzată! Oprire monitorizare.');
-                        permissionDeniedRef.current = true;
-
-                        // Clear watch immediately
-                        if (watchIdRef.current) {
-                            navigator.geolocation.clearWatch(parseInt(watchIdRef.current, 10));
-                            watchIdRef.current = null;
-                        }
-
-                        setState(s => ({ ...s, error: 'Acces locație refuzat. Activează GPS din setări.' }));
-                        return;
-                    }
-
-                    console.error('[Agent ZONA] Eroare locație:', err.message);
-                    // For other errors (timeout, unavailable), we might keep trying or show error
-                    setState(s => ({ ...s, error: `Eroare GPS: ${err.message}` }));
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 20000,
-                    maximumAge: 5000
+                try {
+                    await Geolocation.clearWatch({ id: watchIdRef.current });
+                } catch (e) {
+                    // Ignore clearWatch errors
                 }
-            );
-
-            watchIdRef.current = watchId.toString();
-        };
-
-        startWatching();
-
-        // Cleanup function
-        return () => {
-            if (watchIdRef.current) {
-                const numericId = parseInt(watchIdRef.current, 10);
-                if (!isNaN(numericId)) navigator.geolocation.clearWatch(numericId);
                 watchIdRef.current = null;
             }
+            if (intervalIdRef.current) {
+                clearInterval(intervalIdRef.current);
+                intervalIdRef.current = null;
+            }
         };
-        // Dependencies: Only restart if enabled status, target coordinates, or radius changes.
-        // NOT when callbacks change (handled by refs).
-    }, [config.enabled, config.latitude, config.longitude, config.radius, checkPosition]);
 
-    return state;
+        // If not enabled or no coordinates, clean up and return
+        if (!config.enabled || !config.latitude || !config.longitude) {
+            clearCurrentWatchers();
+            setState(s => ({
+                ...s,
+                status: 'idle',
+                currentDistance: null,
+                isInZone: false,
+                error: !config.enabled ? null : 'Coordonate punct de lucru lipsă',
+            }));
+            lastKnownZoneState.current = null;
+            return;
+        }
+
+        const startLocationTracking = async () => {
+            try {
+                // 1. Check and request permissions via Capacitor
+                try {
+                    const perm = await Geolocation.checkPermissions();
+                    if (perm.location !== 'granted') {
+                        const req = await Geolocation.requestPermissions();
+                        if (req.location !== 'granted') {
+                            if (isMounted) {
+                                setState(s => ({
+                                    ...s,
+                                    status: 'error',
+                                    error: 'Permisiunea de locație este necesară pentru automatizare GPS.',
+                                }));
+                            }
+                            return;
+                        }
+                    }
+                } catch (permErr) {
+                    console.warn('[Agent ZONA GPS] Verificare permisiuni:', permErr);
+                }
+
+                if (!isMounted) return;
+
+                // 2. Immediate position check
+                try {
+                    const immediatePos = await Geolocation.getCurrentPosition({
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 3000,
+                    });
+                    if (isMounted && immediatePos) {
+                        handleNewPosition(immediatePos);
+                    }
+                } catch (err: any) {
+                    console.warn('[Agent ZONA GPS] Verificare inițială getCurrentPosition eroare:', err?.message || err);
+                }
+
+                if (!isMounted) return;
+
+                // 3. Register continuous watchPosition
+                try {
+                    const callbackId = await Geolocation.watchPosition(
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 15000,
+                            maximumAge: 3000,
+                        },
+                        (pos, err) => {
+                            if (!isMounted) return;
+                            if (err) {
+                                console.warn('[Agent ZONA GPS] watchPosition eroare:', err);
+                                return;
+                            }
+                            if (pos) {
+                                handleNewPosition(pos);
+                            }
+                        }
+                    );
+                    watchIdRef.current = callbackId;
+                } catch (watchErr: any) {
+                    console.error('[Agent ZONA GPS] Nu s-a putut iniția watchPosition:', watchErr);
+                }
+
+                // 4. Heartbeat interval: active check every 15s to keep location fresh on stationary devices
+                intervalIdRef.current = setInterval(() => {
+                    if (isMounted && configRef.current.enabled) {
+                        refreshPosition();
+                    }
+                }, 15000);
+
+            } catch (err: any) {
+                if (isMounted) {
+                    setState(s => ({
+                        ...s,
+                        status: 'error',
+                        error: `Eroare GPS: ${err?.message || 'Eroare la pornire'}`,
+                    }));
+                }
+            }
+        };
+
+        startLocationTracking();
+
+        // 5. Visibility change / Focus listener to re-verify location immediately when user opens app
+        const handleAppResume = () => {
+            if (document.visibilityState === 'visible' && configRef.current.enabled) {
+                console.log('[Agent ZONA GPS] Aplicație readusă în prim-plan -> Verificare imediată GPS');
+                refreshPosition();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleAppResume);
+        window.addEventListener('focus', handleAppResume);
+
+        return () => {
+            isMounted = false;
+            document.removeEventListener('visibilitychange', handleAppResume);
+            window.removeEventListener('focus', handleAppResume);
+            clearCurrentWatchers();
+        };
+    }, [config.enabled, config.latitude, config.longitude, config.radius, handleNewPosition, refreshPosition]);
+
+    return {
+        ...state,
+        refreshPosition,
+    };
 };
