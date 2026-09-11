@@ -448,14 +448,35 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                 <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
                   Zile Concediu (CO)
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="25"
-                  value={simInputs.vacationDays}
-                  onChange={e => setSimInputs({ ...simInputs, vacationDays: parseInt(e.target.value) || 0 })}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
-                />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSimInputs(prev => ({ ...prev, vacationDays: Math.max(0, prev.vacationDays - 1) }))}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    max="25"
+                    value={simInputs.vacationDays === 0 ? '' : simInputs.vacationDays}
+                    placeholder="0"
+                    onFocus={e => e.target.select()}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSimInputs({ ...simInputs, vacationDays: val === '' ? 0 : Math.max(0, parseInt(val) || 0) });
+                    }}
+                    className="w-full text-center p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSimInputs(prev => ({ ...prev, vacationDays: Math.min(25, prev.vacationDays + 1) }))}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -463,14 +484,35 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                   <Ticket size={14} className="text-teal-500" />
                   Tichete Masă ({simInputs.mealTicketValue} lei)
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="31"
-                  value={simInputs.mealTicketsCount}
-                  onChange={e => setSimInputs({ ...simInputs, mealTicketsCount: parseInt(e.target.value) || 0 })}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
-                />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSimInputs(prev => ({ ...prev, mealTicketsCount: Math.max(0, prev.mealTicketsCount - 1) }))}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    max="31"
+                    value={simInputs.mealTicketsCount === 0 ? '' : simInputs.mealTicketsCount}
+                    placeholder="0"
+                    onFocus={e => e.target.select()}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSimInputs({ ...simInputs, mealTicketsCount: val === '' ? 0 : Math.max(0, parseInt(val) || 0) });
+                    }}
+                    className="w-full text-center p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSimInputs(prev => ({ ...prev, mealTicketsCount: Math.min(31, prev.mealTicketsCount + 1) }))}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -479,14 +521,28 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
                 Avans Reținut (RON)
               </label>
-              <input
-                type="number"
-                min="0"
-                step="50"
-                value={simInputs.advancePayment}
-                onChange={e => setSimInputs({ ...simInputs, advancePayment: parseFloat(e.target.value) || 0 })}
-                className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={simInputs.advancePayment === 0 ? '' : simInputs.advancePayment}
+                  placeholder="0"
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSimInputs({ ...simInputs, advancePayment: val === '' ? 0 : Math.max(0, parseFloat(val) || 0) });
+                  }}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSimInputs(prev => ({ ...prev, advancePayment: 1500 }))}
+                  className="px-3 py-2.5 bg-gray-100 dark:bg-white/10 text-xs font-bold text-gray-700 dark:text-gray-300 rounded-xl whitespace-nowrap active:scale-95"
+                >
+                  Standard 1500
+                </button>
+              </div>
             </div>
           </div>
 
@@ -696,8 +752,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <td className="text-center">
                       <input
                         type="number"
-                        value={fluturasInputs.normalHours}
-                        onChange={e => setFluturasInputs({ ...fluturasInputs, normalHours: parseFloat(e.target.value) || 0 })}
+                        value={fluturasInputs.normalHours === 0 ? '' : fluturasInputs.normalHours}
+                        placeholder="0"
+                        onFocus={e => e.target.select()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFluturasInputs({ ...fluturasInputs, normalHours: val === '' ? 0 : parseFloat(val) || 0 });
+                        }}
                         className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
@@ -713,8 +774,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <td className="text-center">
                       <input
                         type="number"
-                        value={fluturasInputs.overtimeHours}
-                        onChange={e => setFluturasInputs({ ...fluturasInputs, overtimeHours: parseFloat(e.target.value) || 0 })}
+                        value={fluturasInputs.overtimeHours === 0 ? '' : fluturasInputs.overtimeHours}
+                        placeholder="0"
+                        onFocus={e => e.target.select()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFluturasInputs({ ...fluturasInputs, overtimeHours: val === '' ? 0 : parseFloat(val) || 0 });
+                        }}
                         className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
@@ -730,8 +796,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <td className="text-center">
                       <input
                         type="number"
-                        value={fluturasInputs.nightHours}
-                        onChange={e => setFluturasInputs({ ...fluturasInputs, nightHours: parseFloat(e.target.value) || 0 })}
+                        value={fluturasInputs.nightHours === 0 ? '' : fluturasInputs.nightHours}
+                        placeholder="0"
+                        onFocus={e => e.target.select()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFluturasInputs({ ...fluturasInputs, nightHours: val === '' ? 0 : parseFloat(val) || 0 });
+                        }}
                         className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
@@ -747,8 +818,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <td className="text-center">
                       <input
                         type="number"
-                        value={fluturasInputs.mealTicketsCount}
-                        onChange={e => setFluturasInputs({ ...fluturasInputs, mealTicketsCount: parseInt(e.target.value) || 0 })}
+                        value={fluturasInputs.mealTicketsCount === 0 ? '' : fluturasInputs.mealTicketsCount}
+                        placeholder="0"
+                        onFocus={e => e.target.select()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFluturasInputs({ ...fluturasInputs, mealTicketsCount: val === '' ? 0 : parseInt(val) || 0 });
+                        }}
                         className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
@@ -764,8 +840,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <td className="text-center">
                       <input
                         type="number"
-                        value={fluturasInputs.restDePlata}
-                        onChange={e => setFluturasInputs({ ...fluturasInputs, restDePlata: parseFloat(e.target.value) || 0 })}
+                        value={fluturasInputs.restDePlata === 0 ? '' : fluturasInputs.restDePlata}
+                        placeholder="0"
+                        onFocus={e => e.target.select()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFluturasInputs({ ...fluturasInputs, restDePlata: val === '' ? 0 : parseFloat(val) || 0 });
+                        }}
                         className="w-20 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
