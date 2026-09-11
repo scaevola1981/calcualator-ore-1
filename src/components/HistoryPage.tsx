@@ -64,6 +64,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   formatHoursMinutes,
   onDeleteSession,
   onAddSession,
+  onUpdateSession,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -321,8 +322,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     }
 
     // Validare anti-suprapunere (ignoring currently edited session)
-    const hasOverlap = workSessions.some(existing => {
-      if (editingSessionId && (existing.id === editingSessionId || (existing as any).originalIndex === editingSessionId)) {
+    const hasOverlap = workSessions.some((existing, idx) => {
+      const isCurrent = editingSessionId !== null && (
+        (existing.id && existing.id === editingSessionId) ||
+        idx === editingSessionId ||
+        String(existing.id) === String(editingSessionId) ||
+        String(idx) === String(editingSessionId)
+      );
+      if (isCurrent) {
         return false;
       }
       const exStart = new Date(existing.startTime).getTime();
@@ -337,7 +344,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       return;
     }
 
-    if (editingSessionId && onUpdateSession) {
+    if (editingSessionId !== null && onUpdateSession) {
       onUpdateSession(editingSessionId, finalStart, finalEnd);
     } else {
       onAddSession({
@@ -651,7 +658,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             <div className="relative bg-white dark:bg-[#132337] backdrop-blur-2xl rounded-[30px] shadow-2xl border border-gray-100 dark:border-white/15 p-6 w-full max-w-sm animate-fade-in-up">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {editingSessionId ? "Editează Sesiune" : "Adaugă Sesiune"}
+                  {editingSessionId !== null ? "Editează Sesiune" : "Adaugă Sesiune"}
                 </h3>
                 <button
                   onClick={() => {
@@ -760,7 +767,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   onClick={handleSaveManualSession}
                   className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all mt-4 text-base"
                 >
-                  {editingSessionId ? "Actualizează Sesiunea" : "Salvează Sesiunea"}
+                  {editingSessionId !== null ? "Actualizează Sesiunea" : "Salvează Sesiunea"}
                 </button>
               </div>
             </div>

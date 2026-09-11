@@ -299,7 +299,10 @@ const App: React.FC = () => {
     const rStart = roundEntryTime(newStart);
     const rEnd = roundExitTime(newEnd);
     setWorkSessions(prev => prev.map((s, idx) => {
-      const isMatch = typeof identifier === 'string' ? s.id === identifier : idx === identifier;
+      const isMatch = (s.id && s.id === identifier) ||
+                      idx === identifier ||
+                      String(idx) === String(identifier) ||
+                      (s.id && String(s.id) === String(identifier));
       if (isMatch) {
         return {
           ...s,
