@@ -163,6 +163,11 @@ const App: React.FC = () => {
   const isWorkingRef = useRef(isWorking);
   const startTimeRef = useRef(startTime);
   const settingsRef = useRef(settings);
+  const isLoadingRef = useRef(isLoading);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   useEffect(() => {
     isWorkingRef.current = isWorking;
@@ -177,29 +182,43 @@ const App: React.FC = () => {
     latitude: settings.gateLatitude || 0,
     longitude: settings.gateLongitude || 0,
     radius: settings.geofenceRadius || 400,
-    enabled: settings.geofencingEnabled || false,
-  }), [settings.gateLatitude, settings.gateLongitude, settings.geofenceRadius, settings.geofencingEnabled]);
+    enabled: !isLoading && (settings.geofencingEnabled || false),
+  }), [isLoading, settings.gateLatitude, settings.gateLongitude, settings.geofenceRadius, settings.geofencingEnabled]);
 
   const handleZoneEntry = useCallback(() => {
-    // Auto-Start logic when entering work area
-    if (!isWorkingRef.current && settingsRef.current.geofencingEnabled) {
-      const now = new Date();
-      const roundedStart = roundEntryTime(now);
+    // If loading storage from device, ignore to prevent race conditions
+    if (isLoadingRef.current) return;
+    if (!settingsRef.current.geofencingEnabled) return;
+
+    // If already working, do nothing
+    if (isWorkingRef.current) return;
+
+    // CRITICAL: If an active startTime already exists (e.g. from storage/session), NEVER overwrite it!
+    if (startTimeRef.current) {
+      console.log('[Agent ZONA GPS] Sesiunea era deja activă de la:', startTimeRef.current);
       setIsWorking(true);
-      setStartTime(roundedStart);
-      notifyZoneEntry(settingsRef.current.userName || 'Florin');
-      setGpsToast({
-        type: 'entry',
-        title: '🟢 Punct de Lucru Detectat',
-        message: 'Ai intrat în raza de lucru! Pontajul a pornit automat. Spor la muncă!',
-      });
-      setTimeout(() => setGpsToast(null), 6000);
+      return;
     }
+
+    const now = new Date();
+    const roundedStart = roundEntryTime(now);
+    setIsWorking(true);
+    setStartTime(roundedStart);
+    notifyZoneEntry(settingsRef.current.userName || 'Florin');
+    setGpsToast({
+      type: 'entry',
+      title: '🟢 Punct de Lucru Detectat',
+      message: 'Ai intrat în raza de lucru! Pontajul a pornit automat. Spor la muncă!',
+    });
+    setTimeout(() => setGpsToast(null), 6000);
   }, []);
 
   const handleZoneExit = useCallback(() => {
+    if (isLoadingRef.current) return;
+    if (!settingsRef.current.geofencingEnabled) return;
+
     // Auto-Stop logic when leaving work area
-    if (isWorkingRef.current && settingsRef.current.geofencingEnabled && startTimeRef.current) {
+    if (isWorkingRef.current && startTimeRef.current) {
       const now = new Date();
       const roundedEnd = roundExitTime(now);
       const sTime = startTimeRef.current;
@@ -274,6 +293,22 @@ const App: React.FC = () => {
       modeFlag: settings.hasNoLimit,
     };
     setWorkSessions(prev => [...prev, newSession]);
+  };
+
+  const handleUpdateSession = (identifier: string | number, newStart: Date, newEnd: Date) => {
+    const rStart = roundEntryTime(newStart);
+    const rEnd = roundExitTime(newEnd);
+    setWorkSessions(prev => prev.map((s, idx) => {
+      const isMatch = typeof identifier === 'string' ? s.id === identifier : idx === identifier;
+      if (isMatch) {
+        return {
+          ...s,
+          startTime: rStart,
+          endTime: rEnd,
+        };
+      }
+      return s;
+    }));
   };
 
   const handleDeleteSession = (identifier: string | number) => {
@@ -685,6 +720,7 @@ const App: React.FC = () => {
                 formatHoursMinutes={formatHoursMinutes}
                 todaySessions={workSessions.filter(s => new Date(s.startTime).toDateString() === new Date().toDateString())}
                 onAddSession={handleManualAddSession} // Use wrapper to apply rounding
+                onUpdateSession={handleUpdateSession}
                 onDeleteSession={handleDeleteSession}
                 addNotification={addNotification}
                 onSettingsChange={setSettings}

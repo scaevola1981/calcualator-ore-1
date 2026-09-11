@@ -9,6 +9,7 @@ import {
   X,
   Plus,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import {
   calculateEffectiveHourlyRate,
@@ -24,6 +25,7 @@ interface HistoryPageProps {
   formatHoursMinutes: (hours: number) => string;
   onDeleteSession: (identifier: string | number) => void;
   onAddSession: (session: WorkSession) => void;
+  onUpdateSession?: (identifier: string | number, start: Date, end: Date) => void;
   onSettingsChange: (settings: AppSettings) => void;
   addNotification?: (message: string) => void;
 }
@@ -73,11 +75,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     "all"
   );
 
-  // Manual Entry Modal States
+  // Manual Entry / Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false);
-  const [startHour, setStartHour] = useState("09");
-  const [startMinute, setStartMinute] = useState("00");
-  const [endHour, setEndHour] = useState("17");
+  const [editingSessionId, setEditingSessionId] = useState<string | number | null>(null);
+  const [startHour, setStartHour] = useState("06");
+  const [startMinute, setStartMinute] = useState("30");
+  const [endHour, setEndHour] = useState("15");
   const [endMinute, setEndMinute] = useState("00");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -273,6 +276,21 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
 
 
+  const handleOpenEditModal = (session: WorkSession & { originalIndex: number }) => {
+    const sStart = new Date(session.startTime);
+    const sEnd = new Date(session.endTime);
+    setSelectedDate(sStart);
+    setEditingSessionId(session.id || session.originalIndex);
+    setStartHour(String(sStart.getHours()).padStart(2, "0"));
+    const roundedStartM = Math.round(sStart.getMinutes() / 5) * 5 % 60;
+    setStartMinute(String(roundedStartM).padStart(2, "0"));
+    setEndHour(String(sEnd.getHours()).padStart(2, "0"));
+    const roundedEndM = Math.round(sEnd.getMinutes() / 5) * 5 % 60;
+    setEndMinute(String(roundedEndM).padStart(2, "0"));
+    setErrorMessage("");
+    setShowAddModal(true);
+  };
+
   const handleSaveManualSession = () => {
     setErrorMessage("");
     if (!selectedDate) return;
@@ -302,8 +320,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       return;
     }
 
-    // Validare anti-suprapunere
+    // Validare anti-suprapunere (ignoring currently edited session)
     const hasOverlap = workSessions.some(existing => {
+      if (editingSessionId && (existing.id === editingSessionId || (existing as any).originalIndex === editingSessionId)) {
+        return false;
+      }
       const exStart = new Date(existing.startTime).getTime();
       const exEnd = new Date(existing.endTime).getTime();
       const newStart = finalStart.getTime();
@@ -316,13 +337,18 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       return;
     }
 
-    onAddSession({
-      startTime: finalStart,
-      endTime: finalEnd,
-    });
+    if (editingSessionId && onUpdateSession) {
+      onUpdateSession(editingSessionId, finalStart, finalEnd);
+    } else {
+      onAddSession({
+        startTime: finalStart,
+        endTime: finalEnd,
+      });
+    }
 
     // Reset and close
     setShowAddModal(false);
+    setEditingSessionId(null);
   };
 
   // Helper to preview duration
@@ -495,10 +521,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             {/* Add Session Button */}
             <button
               onClick={() => {
+                setEditingSessionId(null);
                 setErrorMessage("");
-                setStartHour("09");
-                setStartMinute("00");
-                setEndHour("17");
+                setStartHour("06");
+                setStartMinute("30");
+                setEndHour("15");
                 setEndMinute("00");
                 setShowAddModal(true);
               }}
@@ -569,16 +596,26 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                               Durată efectivă: {formatHoursMinutes(calculateDurationWithBreak(sStart, sEnd))}
                             </span>
                           </div>
-                          <button
-                            onClick={() => {
-                              onDeleteSession(session.id || session.originalIndex);
-                            }}
-                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all"
-                            title="Șterge sesiunea"
-                            aria-label="Șterge sesiunea"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleOpenEditModal(session)}
+                              className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl transition-all"
+                              title="Editează sesiunea"
+                              aria-label="Editează sesiunea"
+                            >
+                              <Pencil className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                onDeleteSession(session.id || session.originalIndex);
+                              }}
+                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all"
+                              title="Șterge sesiunea"
+                              aria-label="Șterge sesiunea"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
                         </li>
                       );
                     })}
@@ -600,21 +637,27 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         </div>
       )}
 
-      {/* Manual Entry Modal */}
+      {/* Manual Entry / Edit Modal */}
       {
         showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-md"
-              onClick={() => setShowAddModal(false)}
+              onClick={() => {
+                setShowAddModal(false);
+                setEditingSessionId(null);
+              }}
             />
             <div className="relative bg-white dark:bg-[#132337] backdrop-blur-2xl rounded-[30px] shadow-2xl border border-gray-100 dark:border-white/15 p-6 w-full max-w-sm animate-fade-in-up">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Adaugă Sesiune
+                  {editingSessionId ? "Editează Sesiune" : "Adaugă Sesiune"}
                 </h3>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingSessionId(null);
+                  }}
                   className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
                   aria-label="Închide fereastra"
                 >
@@ -717,7 +760,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   onClick={handleSaveManualSession}
                   className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all mt-4 text-base"
                 >
-                  Salvează Sesiunea
+                  {editingSessionId ? "Actualizează Sesiunea" : "Salvează Sesiunea"}
                 </button>
               </div>
             </div>

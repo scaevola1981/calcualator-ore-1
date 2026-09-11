@@ -63,6 +63,7 @@ export const useGeofencing = (
     const watchIdRef = useRef<CallbackID | null>(null);
     const intervalIdRef = useRef<any>(null);
     const lastKnownZoneState = useRef<boolean | null>(null);
+    const consecutiveExitCount = useRef<number>(0);
 
     // Refs for latest callbacks to prevent stale closures
     const onEnterZoneRef = useRef(onEnterZone);
@@ -88,6 +89,12 @@ export const useGeofencing = (
 
         if (!targetLat || !targetLng) return;
 
+        // Reject very poor accuracy readings (> 250m) to prevent indoor false exits
+        if (accuracy && accuracy > 250) {
+            console.warn(`[Agent ZONA GPS] Semnal GPS imprecis (Acuratețe: ${Math.round(accuracy)}m). Ignorat pentru tranziție zonă.`);
+            return;
+        }
+
         const distance = calculateDistance(
             targetLat,
             targetLng,
@@ -96,10 +103,15 @@ export const useGeofencing = (
         );
 
         const roundedDistance = Math.round(distance);
+        // Hysteresis buffer:
+        // Inside zone: distance <= targetRadius
+        // Outside zone threshold: distance > targetRadius + 100m (e.g. 500m for 400m radius)
         const isNowInZone = distance <= targetRadius;
+        const exitThreshold = targetRadius + 100;
+        const isClearlyOutside = distance > exitThreshold;
         const previousZoneState = lastKnownZoneState.current;
 
-        console.log(`[Agent ZONA GPS] Distanță: ${roundedDistance}m (Rază: ${targetRadius}m, Acuratețe: ${accuracy ? Math.round(accuracy) : '?'}m, În zonă: ${isNowInZone})`);
+        console.log(`[Agent ZONA GPS] Distanță: ${roundedDistance}m (Rază: ${targetRadius}m, Buffer ieșire: ${exitThreshold}m, Acuratețe: ${accuracy ? Math.round(accuracy) : '?'}m, În zonă: ${isNowInZone})`);
 
         setState(prev => ({
             ...prev,
@@ -111,24 +123,36 @@ export const useGeofencing = (
             error: null,
         }));
 
-        // Transition logic:
+        // Transition logic with debouncing:
         if (previousZoneState === null) {
             // First time receiving position
+            consecutiveExitCount.current = 0;
             lastKnownZoneState.current = isNowInZone;
             if (isNowInZone) {
                 console.log('[Agent ZONA GPS] 🟢 Detectat inițial în zonă -> Pornire pontaj');
                 onEnterZoneRef.current?.();
             }
         } else if (!previousZoneState && isNowInZone) {
-            // Transition: Outside -> Inside
+            // Transition: Outside -> Inside (Immediate on entering radius)
             console.log('[Agent ZONA GPS] 🟢 Intrare în zonă de lucru -> Pornire pontaj');
+            consecutiveExitCount.current = 0;
             lastKnownZoneState.current = true;
             onEnterZoneRef.current?.();
-        } else if (previousZoneState && !isNowInZone) {
-            // Transition: Inside -> Outside
-            console.log('[Agent ZONA GPS] 🔴 Ieșire din zonă de lucru -> Oprire pontaj');
-            lastKnownZoneState.current = false;
-            onExitZoneRef.current?.();
+        } else if (previousZoneState) {
+            if (isNowInZone) {
+                // Still inside or returned inside -> reset exit counter
+                consecutiveExitCount.current = 0;
+            } else if (isClearlyOutside) {
+                // Beyond buffer threshold -> require 3 consecutive readings (~30-45s) to confirm real exit
+                consecutiveExitCount.current += 1;
+                console.log(`[Agent ZONA GPS] ⚠️ Posibilă ieșire (${consecutiveExitCount.current}/3 lecturi consecutive la ${roundedDistance}m)`);
+                if (consecutiveExitCount.current >= 3) {
+                    console.log('[Agent ZONA GPS] 🔴 Ieșire confirmată din zonă de lucru -> Oprire pontaj');
+                    consecutiveExitCount.current = 0;
+                    lastKnownZoneState.current = false;
+                    onExitZoneRef.current?.();
+                }
+            }
         }
     }, []);
 
