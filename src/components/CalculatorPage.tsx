@@ -601,17 +601,32 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               Facem automat citirea cifrelor prin OCR și le comparăm cu pontajul tău real.
             </p>
 
-            <label className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm shadow-md cursor-pointer transition-all">
-              <Upload size={16} />
-              <span>{uploadedImage ? 'Schimbă Poza Fluturaș' : 'Selectează Poza Fluturaș'}</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* Opțiunea 1: Alege din Galerie / Poze (FĂRĂ capture) */}
+              <label className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm shadow-md cursor-pointer transition-all">
+                <Upload size={16} />
+                <span>{uploadedImage ? 'Alege altă Poză din Galerie' : 'Alege din Poze / Galerie'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Opțiunea 2: Fă Poză cu Camera */}
+              <label className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-gray-200 dark:border-white/15 active:scale-95 text-gray-800 dark:text-white font-bold text-sm shadow-sm cursor-pointer transition-all">
+                <Camera size={16} className="text-blue-500" />
+                <span>Fă Poză cu Camera</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
             {isOcrProcessing && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900 text-xs font-bold text-blue-600 dark:text-blue-400">
