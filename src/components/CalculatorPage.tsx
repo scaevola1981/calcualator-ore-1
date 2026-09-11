@@ -1,34 +1,37 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Clock,
-  AlertTriangle,
-  CheckCircle2,
-  FileText,
-  DollarSign,
   Moon,
   Zap,
   Ticket,
-  ShieldAlert
+  Upload,
+  Camera,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Info,
+  Calendar
 } from 'lucide-react';
 import type { AppSettings, WorkSession } from '../types';
 import { getLocalISODate } from '../utils/dateUtils';
 import { calculateDurationWithBreak, calculateNightHours } from '../utils/timeRounding';
+import { calculatePayroll, PayrollInputs, PayrollBreakdown } from '../utils/payrollCalculator';
+import { parsePayslipText, ExtractedPayslipData } from '../utils/payslipParser';
 
 interface CalculatorPageProps {
-  totalHours?: number;
-  totalNormalHours?: number;
-  totalOvertimeHours?: number;
-  totalNightHours?: number;
   settings: AppSettings;
   onSettingsChange: (newSettings: AppSettings) => void;
-  workedDaysCount?: number;
   workSessions?: WorkSession[];
   referenceDate?: Date;
 }
 
-// Zile lucrătoare Luni-Vineri excluzând sărbătorile legale
+// Zile lucrătoare L-V excluzând sărbătorile legale
 const getWorkingDaysInMonth = (year: number, month: number, holidays: string[] = []): number => {
-  if (year < 2000 || year > 2100 || month < 0 || month > 11) return 20;
+  if (year < 2000 || year > 2100 || month < 0 || month > 11) return 21;
 
   let count = 0;
   for (let day = 1; day <= 31; day++) {
@@ -43,43 +46,38 @@ const getWorkingDaysInMonth = (year: number, month: number, holidays: string[] =
       count++;
     }
   }
-  return count;
+  return count > 0 ? count : 21;
 };
 
 export const CalculatorPage: React.FC<CalculatorPageProps> = ({
-  totalNormalHours = 0,
-  totalOvertimeHours = 0,
-  totalNightHours = 0,
   settings,
   onSettingsChange,
   workSessions = [],
-  referenceDate
+  referenceDate,
 }) => {
-  const [activeTab, setActiveTab] = useState<'calculator' | 'audit'>('calculator');
+  const [activeTab, setActiveTab] = useState<'simulator' | 'audit'>('simulator');
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   const refDate = useMemo(() => {
-    return (referenceDate instanceof Date && !isNaN(referenceDate.getTime())) ? referenceDate : new Date();
+    return referenceDate instanceof Date && !isNaN(referenceDate.getTime()) ? referenceDate : new Date();
   }, [referenceDate]);
 
-  const currentMonth = refDate.getMonth();
-  const currentYear = refDate.getFullYear();
+  // Luna selectată pentru calcul și pontaj (default luna curentă)
+  const [selectedMonthOffset, setSelectedMonthOffset] = useState<number>(0);
+  const targetDate = useMemo(() => {
+    const d = new Date(refDate.getFullYear(), refDate.getMonth() + selectedMonthOffset, 1);
+    return d;
+  }, [refDate, selectedMonthOffset]);
 
-  // Zile lucrătoare standard (L-V fără sărbători legale)
+  const currentMonth = targetDate.getMonth();
+  const currentYear = targetDate.getFullYear();
+
   const standardWorkingDays = useMemo(() => {
     return getWorkingDaysInMonth(currentYear, currentMonth, settings.legalHolidays);
   }, [currentYear, currentMonth, settings.legalHolidays]);
 
-  // Salariu net de bază (4200 RON conform discutie.md)
-  const salaryNet = settings.monthlySalary || 4200;
-  // Salariu brut de încadrare (7180 RON conform discutie.md)
-  const grossSalary = settings.grossSalary || 7180;
-  // Spor fix regie / weekend 1% din 7180 = 71.80 RON
-  const sporRegie = settings.sporRegieFixed || 71.80;
-  // Valoare tichet masă (22 RON conform discutie.md)
-  const mealTicketVal = settings.mealTicketValue || 22;
-
-  // Calcul exact din sesiunile lunii curente
-  const computedMonthStats = useMemo(() => {
+  // Calcul exact din sesiunile reale ale lunii selectate
+  const recordedStats = useMemo(() => {
     const startOfMonth = new Date(currentYear, currentMonth, 1);
     const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
 
@@ -89,129 +87,168 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
     const ticketDays = new Set<string>();
 
     workSessions.forEach(session => {
-      const sDate = new Date(session.startTime);
-      if (sDate >= startOfMonth && sDate <= endOfMonth) {
-        const dStr = getLocalISODate(sDate);
-        const dayOfWeek = sDate.getDay();
+      const sStart = new Date(session.startTime);
+      const sEnd = new Date(session.endTime);
+      if (sStart >= startOfMonth && sStart <= endOfMonth) {
+        const dStr = getLocalISODate(sStart);
+        const dayOfWeek = sStart.getDay();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         const isHoliday = (settings.legalHolidays || []).includes(dStr);
 
-        // Durată efectivă cu scăderea automată a pauzei de 30 min
-        const duration = calculateDurationWithBreak(new Date(session.startTime), new Date(session.endTime));
-
-        // Ore de noapte (22:00 - 06:00)
-        nightH += calculateNightHours(new Date(session.startTime), new Date(session.endTime));
+        const duration = calculateDurationWithBreak(sStart, sEnd);
+        nightH += calculateNightHours(sStart, sEnd);
 
         if (isWeekend || isHoliday) {
           overtimeH += duration;
         } else {
-          // Luni-Vineri fără sărbătoare: eligibil pentru tichet de masă (22 RON)
-          if (duration > 0) {
-            ticketDays.add(dStr);
-          }
+          if (duration > 0) ticketDays.add(dStr);
           if (duration <= (settings.normalHoursLimit || 8)) {
             normalH += duration;
           } else {
             normalH += settings.normalHoursLimit || 8;
-            overtimeH += (duration - (settings.normalHoursLimit || 8));
+            overtimeH += duration - (settings.normalHoursLimit || 8);
           }
         }
       }
     });
 
     return {
-      normalHours: normalH,
-      overtimeHours: overtimeH,
-      nightHours: nightH,
+      normalHours: Number(normalH.toFixed(1)),
+      overtimeHours: Number(overtimeH.toFixed(1)),
+      nightHours: Number(nightH.toFixed(1)),
       ticketDaysCount: ticketDays.size,
     };
   }, [workSessions, currentYear, currentMonth, settings.legalHolidays, settings.normalHoursLimit]);
 
-  // Ore editabile în tabul de calcul
-  const [hours, setHours] = useState({
-    normal: computedMonthStats.normalHours || totalNormalHours || (standardWorkingDays * 8),
-    night: computedMonthStats.nightHours || totalNightHours || 0,
-    overtime: computedMonthStats.overtimeHours || totalOvertimeHours || 0
+  // STARE PENTRU SIMULATOR
+  const [simInputs, setSimInputs] = useState<PayrollInputs>({
+    grossBaseSalary: settings.grossSalary || 7180,
+    workingDaysInMonth: standardWorkingDays,
+    normalHours: recordedStats.normalHours > 0 ? recordedStats.normalHours : (standardWorkingDays * 8),
+    nightHours: recordedStats.nightHours,
+    overtimeHours: recordedStats.overtimeHours,
+    vacationDays: 0,
+    weekendBonusPercent: 1, // 1% spor weekend
+    primaOS: 0,
+    mealTicketsCount: recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays,
+    mealTicketValue: settings.mealTicketValue || 22,
+    advancePayment: settings.standardAdvance || 1500,
   });
 
+  // Re-sincronizează la schimbarea lunii sau a setărilor
   useEffect(() => {
-    setHours({
-      normal: computedMonthStats.normalHours || (standardWorkingDays * 8),
-      night: computedMonthStats.nightHours || 0,
-      overtime: computedMonthStats.overtimeHours || 0
-    });
-  }, [computedMonthStats, standardWorkingDays]);
-
-  const [extras, setExtras] = useState({
-    mealTicketsCount: computedMonthStats.ticketDaysCount,
-    mealTicketValue: mealTicketVal,
-    advance: settings.standardAdvance || 1500
-  });
-
-  useEffect(() => {
-    setExtras(prev => ({
+    setSimInputs(prev => ({
       ...prev,
-      mealTicketsCount: computedMonthStats.ticketDaysCount,
-      mealTicketValue: mealTicketVal,
-      advance: settings.standardAdvance || 1500
+      grossBaseSalary: settings.grossSalary || 7180,
+      workingDaysInMonth: standardWorkingDays,
+      normalHours: recordedStats.normalHours > 0 ? recordedStats.normalHours : (standardWorkingDays * 8),
+      nightHours: recordedStats.nightHours,
+      overtimeHours: recordedStats.overtimeHours,
+      mealTicketsCount: recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays,
+      mealTicketValue: settings.mealTicketValue || 22,
+      advancePayment: settings.standardAdvance || 1500,
     }));
-  }, [computedMonthStats.ticketDaysCount, mealTicketVal, settings.standardAdvance]);
+  }, [recordedStats, standardWorkingDays, settings.grossSalary, settings.mealTicketValue, settings.standardAdvance]);
 
-  // Tarif orar de bază = Salariu net / (Zile lucrătoare * 8)
-  const hourlyRate = useMemo(() => {
-    return standardWorkingDays > 0 ? (salaryNet / (standardWorkingDays * 8)) : 26.25;
-  }, [salaryNet, standardWorkingDays]);
+  // Calcul rezultat Simulator
+  const simResult: PayrollBreakdown = useMemo(() => {
+    return calculatePayroll(simInputs);
+  }, [simInputs]);
 
-  // Calcule Financiare (Conform discutie.md)
-  // 1. Venit ore normale
-  const incomeNormal = hours.normal * hourlyRate;
-  // 2. Venit ore suplimentare (regula 1:1 agreată)
-  const incomeOvertime = hours.overtime * hourlyRate;
-  // 3. Spor ore de noapte: 25% * hourlyRate * ore_noapte
-  const incomeNightBonus = hours.night * hourlyRate * 0.25;
-  // 4. Spor fix regie/weekend 1% din salariu brut (7180 * 1% = 71.80 RON)
-  const incomeSporRegie = sporRegie;
-  // 5. Total venit net
-  const totalVenitNet = incomeNormal + incomeOvertime + incomeNightBonus + incomeSporRegie;
-  // 6. Contravaloare tichete de masă (22 RON/zi)
-  const incomeTicketsTotal = extras.mealTicketsCount * extras.mealTicketValue;
-  // 7. Rest de plată lichidare = Venit net total - Avans - Tichete
-  const restDePlataCalculat = totalVenitNet - extras.advance - incomeTicketsTotal;
-
-  // --- STARE MODUL AUDIT FLUTURAȘ FABRICĂ ---
-  const [fluturasData, setFluturasData] = useState({
-    venitBrut: grossSalary,
-    oreSuplimentare200: (hours.overtime / 2).toFixed(1), // Artificiul fabricii: ore_reale / 2 la 200%
-    oreNoapte: hours.night.toFixed(1),
-    avansRetinut: 1500,
-    ticheteRetinute: computedMonthStats.ticketDaysCount * 22,
-    restDePlataFluturas: Math.round(restDePlataCalculat)
+  // STARE PENTRU MODUL AUDIT FLUTURAȘ
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<number>(0);
+  const [fluturasInputs, setFluturasInputs] = useState({
+    normalHours: 152,
+    nightHours: 42.9,
+    overtimeHours: 28,
+    mealTicketsCount: 19,
+    grossTotal: 10777,
+    netSalary: 5980,
+    restDePlata: 4480,
   });
 
-  // Re-sincronizează fluturașul când se schimbă orele
-  useEffect(() => {
-    setFluturasData(prev => ({
-      ...prev,
-      oreSuplimentare200: (hours.overtime / 2).toFixed(1),
-      oreNoapte: hours.night.toFixed(1),
-      ticheteRetinute: extras.mealTicketsCount * 22,
-      restDePlataFluturas: Math.round(restDePlataCalculat)
-    }));
-  }, [hours.overtime, hours.night, extras.mealTicketsCount, restDePlataCalculat]);
+  // Încărcare foto fluturaș & OCR
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // AUDIT LOGIC
-  const fluturasOre200 = parseFloat(fluturasData.oreSuplimentare200 as string) || 0;
-  // Ore reale plătite de fabrică = oreFluturas * 2
-  const oreEchivalenteFabrica = fluturasOre200 * 2;
-  const oreSuplimentareReale = hours.overtime;
-  const diferentaOreSuplimentare = oreSuplimentareReale - oreEchivalenteFabrica;
-  const baniPierdutiOvertime = diferentaOreSuplimentare > 0 ? (diferentaOreSuplimentare * hourlyRate) : 0;
+    const imageUrl = URL.createObjectURL(file);
+    setUploadedImage(imageUrl);
+    setIsOcrProcessing(true);
+    setOcrProgress(10);
 
-  const fluturasRestPlata = parseFloat(fluturasData.restDePlataFluturas as any) || 0;
-  const diferentaRestPlata = restDePlataCalculat - fluturasRestPlata;
-  const hasDiscrepantaRest = Math.abs(diferentaRestPlata) >= 1;
-  const hasDiscrepantaOvertime = diferentaOreSuplimentare > 0.05;
-  const isAuditTriggered = hasDiscrepantaOvertime || hasDiscrepantaRest;
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('ron');
+      setOcrProgress(40);
+
+      const ret = await worker.recognize(file);
+      setOcrProgress(80);
+      const text = ret.data.text;
+      await worker.terminate();
+
+      // Parsare automată date fluturaș
+      const parsed = parsePayslipText(text);
+      setFluturasInputs(prev => ({
+        normalHours: parsed.normalHours ?? prev.normalHours,
+        nightHours: parsed.nightHours ?? prev.nightHours,
+        overtimeHours: parsed.overtimeHours ?? prev.overtimeHours,
+        mealTicketsCount: parsed.mealTicketsCount ?? prev.mealTicketsCount,
+        grossTotal: parsed.grossTotal ?? prev.grossTotal,
+        netSalary: parsed.netSalary ?? prev.netSalary,
+        restDePlata: parsed.restDePlata ?? prev.restDePlata,
+      }));
+    } catch (err) {
+      console.warn('Eroare OCR fluturaș:', err);
+    } finally {
+      setIsOcrProcessing(false);
+      setOcrProgress(100);
+    }
+  };
+
+  // AUDIT: Calcule diferențe cap-la-cap (Pontaj Real vs Fluturaș)
+  const auditDiffs = useMemo(() => {
+    const appNormal = recordedStats.normalHours > 0 ? recordedStats.normalHours : (standardWorkingDays * 8);
+    const appOvertime = recordedStats.overtimeHours;
+    const appNight = recordedStats.nightHours;
+    const appTickets = recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays;
+
+    const diffNormal = Number((fluturasInputs.normalHours - appNormal).toFixed(1));
+    const diffOvertime = Number((fluturasInputs.overtimeHours - appOvertime).toFixed(1));
+    const diffNight = Number((fluturasInputs.nightHours - appNight).toFixed(1));
+    const diffTickets = fluturasInputs.mealTicketsCount - appTickets;
+
+    // Calcul valoare financiară a diferenței de ore suplimentare (plătite 200%)
+    // Baza orară ~ 42.74 -> 200% = 85.48 brut -> Net ~ 55% din brut = ~47 RON net/oră
+    const netHourlyOvertime = simResult.hourlyRate * 2 * 0.58;
+    const lostOvertimeMoney = diffOvertime < 0 ? Math.round(Math.abs(diffOvertime) * netHourlyOvertime) : 0;
+    const gainedOvertimeMoney = diffOvertime > 0 ? Math.round(diffOvertime * netHourlyOvertime) : 0;
+
+    // Diferență rest de plată față de cel calculat de simulator
+    const diffRestPlata = fluturasInputs.restDePlata - simResult.restDePlata;
+
+    const isAllMatched =
+      Math.abs(diffOvertime) < 0.5 &&
+      Math.abs(diffNight) < 0.5 &&
+      Math.abs(diffTickets) === 0;
+
+    return {
+      appNormal,
+      appOvertime,
+      appNight,
+      appTickets,
+      diffNormal,
+      diffOvertime,
+      diffNight,
+      diffTickets,
+      lostOvertimeMoney,
+      gainedOvertimeMoney,
+      diffRestPlata,
+      isAllMatched,
+    };
+  }, [recordedStats, standardWorkingDays, fluturasInputs, simResult]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-36">
@@ -220,417 +257,514 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-sm flex items-center gap-2">
-              Calculator & Audit ⚖️
+              Calculator & Fluturaș ⚖️
             </h1>
             <p className="text-white/90 text-xs sm:text-sm font-medium mt-1">
-              TikTok Work v6.2.0 • Mecanismul Fabricii & Reconciliere Fluturaș
+              Simulator Salariu & Audit Cap-la-Cap • Avicarvil
             </p>
           </div>
 
           {/* TAB SWITCHER */}
-          <div className="bg-black/20 p-1.5 rounded-full flex relative backdrop-blur-md border border-white/20">
+          <div className="bg-black/25 p-1.5 rounded-2xl flex relative backdrop-blur-md border border-white/20 w-full sm:w-auto">
             <button
-              onClick={() => setActiveTab('calculator')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-                activeTab === 'calculator'
-                  ? 'bg-white text-blue-600 dark:bg-blue-600 dark:text-white shadow-md scale-105'
+              onClick={() => setActiveTab('simulator')}
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'simulator'
+                  ? 'bg-white text-blue-600 dark:bg-blue-600 dark:text-white shadow-md scale-100'
                   : 'text-white/80 hover:bg-white/10'
               }`}
             >
-              Simulator Salariu
+              <DollarSign size={16} />
+              <span>Simulator</span>
             </button>
             <button
               onClick={() => setActiveTab('audit')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'audit'
-                  ? 'bg-amber-400 text-gray-900 shadow-md scale-105'
+                  ? 'bg-emerald-500 text-white shadow-md scale-100'
                   : 'text-white/80 hover:bg-white/10'
               }`}
             >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              Audit Fluturaș
+              <FileText size={16} />
+              <span>Audit Fluturaș</span>
             </button>
           </div>
         </div>
       </header>
 
-      {activeTab === 'calculator' ? (
-        /* ================= TAB 1: SIMULATOR SALARIU ================= */
-        <div className="px-4 space-y-5">
-          {/* CARD REZULTAT: TOTAL REST DE PLATĂ */}
-          <div className="relative overflow-hidden rounded-[28px] p-6 text-white shadow-xl dark:shadow-black/40 bg-gradient-to-br from-[#0072FF] to-[#00C6FF] dark:from-[#0C3058] dark:to-[#123E6E] border border-white/20 dark:border-white/10 transition-all">
-            <div className="relative z-10">
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-bold text-white/80 dark:text-sky-200/80 uppercase tracking-widest">
-                  ESTIMARE REST DE PLATĂ (LICHIDARE)
-                </span>
-                <span className="bg-white/20 dark:bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold">
-                  {standardWorkingDays} zile lucrătoare
-                </span>
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight my-2 drop-shadow-sm">
-                {restDePlataCalculat.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                <span className="text-2xl font-normal ml-2 opacity-90">{settings.currency}</span>
-              </h2>
-              <p className="text-xs text-white/80 dark:text-sky-100/70 font-medium">
-                Calculat din: Venit net ({totalVenitNet.toFixed(2)} RON) - Avans ({extras.advance} RON) - Tichete ({incomeTicketsTotal} RON).
-              </p>
-            </div>
+      {/* SELECTOR LUNĂ PENTRU SIMULARE / AUDIT */}
+      <div className="px-5">
+        <div className="flex items-center justify-between bg-white dark:bg-[#132337] p-3 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm">
+          <button
+            onClick={() => setSelectedMonthOffset(prev => prev - 1)}
+            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold"
+            title="Luna precedentă"
+          >
+            ←
+          </button>
+          <div className="text-center">
+            <span className="text-xs text-gray-400 dark:text-gray-400 block uppercase font-bold tracking-wider">
+              Luna de referință
+            </span>
+            <span className="text-sm font-black text-gray-900 dark:text-white capitalize">
+              {targetDate.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
+            </span>
           </div>
+          <button
+            onClick={() => setSelectedMonthOffset(prev => (prev < 0 ? prev + 1 : 0))}
+            disabled={selectedMonthOffset >= 0}
+            className={`p-2 rounded-xl text-gray-700 dark:text-gray-300 font-bold ${
+              selectedMonthOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+            title="Luna următoare"
+          >
+            →
+          </button>
+        </div>
+      </div>
 
-          {/* PARAMETRI FINANCIARI DE BAZĂ */}
-          <div className="bg-white dark:bg-[#132337] rounded-[26px] p-5 shadow-md border border-gray-100 dark:border-white/10">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-blue-500" />
-              Parametri Contract & Bază de Calcul
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">
-                  Salariu Net de Bază
-                </span>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    value={salaryNet}
-                    onChange={(e) => onSettingsChange({ ...settings, monthlySalary: parseFloat(e.target.value) || 0 })}
-                    className="w-full text-xl font-bold bg-transparent outline-none text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xs font-bold text-gray-400">RON</span>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">
-                  Salariu Brut Încadrare
-                </span>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    value={grossSalary}
-                    onChange={(e) => onSettingsChange({ ...settings, grossSalary: parseFloat(e.target.value) || 0 })}
-                    className="w-full text-xl font-bold bg-transparent outline-none text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xs font-bold text-gray-400">RON</span>
-                </div>
-              </div>
+      {/* ===================== TAB 1: SIMULATOR SALARIU ===================== */}
+      {activeTab === 'simulator' && (
+        <div className="px-5 space-y-5">
+          {/* CARDS MARI REZULTAT */}
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-[28px] p-6 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-xs uppercase tracking-wider font-bold text-emerald-100">
+                Rest de Plată (Lichidare pe Card)
+              </span>
+              <span className="px-2.5 py-1 bg-white/20 rounded-full text-[11px] font-bold backdrop-blur-md">
+                După Avans
+              </span>
+            </div>
+            <div className="text-4xl sm:text-5xl font-black tracking-tight drop-shadow-sm mb-4">
+              {simResult.restDePlata.toLocaleString('ro-RO')} <span className="text-2xl font-bold">RON</span>
             </div>
 
-            <div className="mt-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-blue-800 dark:text-sky-300 text-xs flex justify-between items-center font-medium">
-              <span>Tarif orar de bază ({salaryNet} ÷ ({standardWorkingDays}z × 8h)):</span>
-              <strong className="text-sm font-bold font-mono">{hourlyRate.toFixed(2)} RON/h</strong>
-            </div>
-          </div>
-
-          {/* PONTAJ ORE & SPORURI */}
-          <div className="bg-white dark:bg-[#132337] rounded-[26px] p-5 shadow-md border border-gray-100 dark:border-white/10 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-500" />
-              Pontaj Ore & Valoare Bani
-            </h3>
-
-            {/* Ore Normale */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5">
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/20 text-xs">
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Ore Normale (8h/zi)</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Tarif 100% ({hourlyRate.toFixed(2)} RON/h)</p>
+                <span className="text-emerald-100 block font-medium">Salariu Net Total:</span>
+                <span className="text-base font-bold">{simResult.netSalary.toLocaleString('ro-RO')} RON</span>
               </div>
-              <div className="text-right">
-                <span className="text-base font-black text-gray-900 dark:text-white mr-2">{hours.normal.toFixed(1)}h</span>
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 block font-mono">
-                  {incomeNormal.toFixed(2)} RON
-                </span>
-              </div>
-            </div>
-
-            {/* Ore Suplimentare */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-purple-50/70 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30">
               <div>
-                <p className="text-sm font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-purple-600" />
-                  Ore Suplimentare Reale
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400">
-                  Regula 1:1 (sau fluturaș: {(hours.overtime / 2).toFixed(1)}h la 200%)
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="text-base font-black text-purple-900 dark:text-purple-200 mr-2">{hours.overtime.toFixed(1)}h</span>
-                <span className="text-xs font-bold text-purple-700 dark:text-purple-300 block font-mono">
-                  {incomeOvertime.toFixed(2)} RON
-                </span>
-              </div>
-            </div>
-
-            {/* Ore de Noapte */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30">
-              <div>
-                <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                  <Moon className="w-4 h-4 text-indigo-600" />
-                  Ore de Noapte (22:00 - 06:00)
-                </p>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400">
-                  Spor 25% (+{(hourlyRate * 0.25).toFixed(2)} RON/h)
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="text-base font-black text-indigo-900 dark:text-indigo-200 mr-2">{hours.night.toFixed(1)}h</span>
-                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 block font-mono">
-                  +{incomeNightBonus.toFixed(2)} RON
-                </span>
-              </div>
-            </div>
-
-            {/* Spor Regie / Weekend (1%) */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-teal-50/70 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/30">
-              <div>
-                <p className="text-sm font-bold text-teal-900 dark:text-teal-200">
-                  Spor Regie / Weekend (1%)
-                </p>
-                <p className="text-xs text-teal-600 dark:text-teal-400">
-                  Fix lunar (1% din salariu brut {grossSalary} RON)
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="text-sm font-black text-teal-900 dark:text-teal-200 font-mono">
-                  +{incomeSporRegie.toFixed(2)} RON
-                </span>
+                <span className="text-emerald-100 block font-medium">Venit Brut Total:</span>
+                <span className="text-base font-bold">{simResult.grossTotal.toLocaleString('ro-RO')} RON</span>
               </div>
             </div>
           </div>
 
-          {/* BENEFICII & DEDUCERI (TICHETE & AVANS) */}
-          <div className="bg-white dark:bg-[#132337] rounded-[26px] p-5 shadow-md border border-gray-100 dark:border-white/10 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
-              <Ticket className="w-4 h-4 text-emerald-500" />
-              Tichete de Masă & Rețineri
-            </h3>
-
-            {/* Tichete de masă */}
-            <div className="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 flex justify-between items-center">
-              <div>
-                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
-                  Tichete de Masă ({extras.mealTicketsCount} zile L-V)
-                </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                  {extras.mealTicketValue} RON / zi (fără weekend/sărbători)
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="text-base font-black text-emerald-900 dark:text-emerald-200 block font-mono">
-                  {incomeTicketsTotal} RON
-                </span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400">pe card dedicat</span>
-              </div>
+          {/* CONTROALE ORE ȘI SLIDERE */}
+          <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm space-y-5">
+            <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-white/5">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Clock size={16} className="text-blue-500" />
+                Ore Lucrate în Lună
+              </h3>
+              <button
+                onClick={() => {
+                  setSimInputs(prev => ({
+                    ...prev,
+                    normalHours: recordedStats.normalHours > 0 ? recordedStats.normalHours : standardWorkingDays * 8,
+                    nightHours: recordedStats.nightHours,
+                    overtimeHours: recordedStats.overtimeHours,
+                    mealTicketsCount: recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays,
+                  }));
+                }}
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                title="Resetează la valorile reale înregistrate de aplicație"
+              >
+                <RefreshCw size={12} />
+                Resetează la pontaj
+              </button>
             </div>
 
-            {/* Avans Reținut */}
-            <div className="p-3 rounded-2xl bg-rose-50/70 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/30 flex justify-between items-center">
-              <div>
-                <p className="text-sm font-bold text-rose-900 dark:text-rose-200">
-                  Avans Încasat la Cincisprezece
-                </p>
-                <p className="text-xs text-rose-600 dark:text-rose-400">
-                  Se deduce din restul de plată lichidare
-                </p>
+            {/* 1. Ore Regie / Normale */}
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Ore Normale (Regie)
+                </label>
+                <span className="text-sm font-black font-mono text-blue-600 dark:text-blue-400">
+                  {simInputs.normalHours}h
+                </span>
               </div>
-              <div className="text-right flex items-center gap-1">
+              <input
+                type="range"
+                min="0"
+                max="200"
+                step="1"
+                value={simInputs.normalHours}
+                onChange={e => setSimInputs({ ...simInputs, normalHours: parseFloat(e.target.value) || 0 })}
+                className="w-full accent-blue-600"
+              />
+            </div>
+
+            {/* 2. Ore Suplimentare (200%) */}
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <Zap size={14} className="text-purple-500" />
+                  Ore Suplimentare (Plătite 200%)
+                </label>
+                <span className="text-sm font-black font-mono text-purple-600 dark:text-purple-400">
+                  {simInputs.overtimeHours}h
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.5"
+                value={simInputs.overtimeHours}
+                onChange={e => setSimInputs({ ...simInputs, overtimeHours: parseFloat(e.target.value) || 0 })}
+                className="w-full accent-purple-600"
+              />
+            </div>
+
+            {/* 3. Ore de Noapte (25%) */}
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <Moon size={14} className="text-indigo-500" />
+                  Ore de Noapte (22:00 - 06:00, Spor 25%)
+                </label>
+                <span className="text-sm font-black font-mono text-indigo-600 dark:text-indigo-400">
+                  {simInputs.nightHours}h
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.5"
+                value={simInputs.nightHours}
+                onChange={e => setSimInputs({ ...simInputs, nightHours: parseFloat(e.target.value) || 0 })}
+                className="w-full accent-indigo-600"
+              />
+            </div>
+
+            {/* 4. Concediu de Odihnă (CO) & Tichete */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div>
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  Zile Concediu (CO)
+                </label>
                 <input
                   type="number"
-                  value={extras.advance}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value) || 0;
-                    setExtras(prev => ({ ...prev, advance: val }));
-                    onSettingsChange({ ...settings, standardAdvance: val });
-                  }}
-                  className="w-24 text-right text-base font-bold bg-transparent outline-none text-rose-900 dark:text-rose-200 font-mono"
+                  min="0"
+                  max="25"
+                  value={simInputs.vacationDays}
+                  onChange={e => setSimInputs({ ...simInputs, vacationDays: parseInt(e.target.value) || 0 })}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
                 />
-                <span className="text-xs font-bold text-rose-600">RON</span>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1 flex items-center gap-1">
+                  <Ticket size={14} className="text-teal-500" />
+                  Tichete Masă ({simInputs.mealTicketValue} lei)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="31"
+                  value={simInputs.mealTicketsCount}
+                  onChange={e => setSimInputs({ ...simInputs, mealTicketsCount: parseInt(e.target.value) || 0 })}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                />
               </div>
             </div>
+
+            {/* 5. Avans Salariu Reținut */}
+            <div className="pt-1">
+              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                Avans Reținut (RON)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="50"
+                value={simInputs.advancePayment}
+                onChange={e => setSimInputs({ ...simInputs, advancePayment: parseFloat(e.target.value) || 0 })}
+                className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          {/* ACORDEON DETALIERE FLUTURAȘ */}
+          <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm">
+            <button
+              onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+              className="w-full flex justify-between items-center text-left"
+            >
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-blue-500" />
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  Desfășurător Fluturaș (Drepturi, Taxe & Rețineri)
+                </span>
+              </div>
+              {showAdvancedSettings ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+
+            {showAdvancedSettings && (
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10 space-y-3 text-xs">
+                <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl flex justify-between items-center">
+                  <span className="text-gray-500 dark:text-gray-400">Tarif orar de bază ({simInputs.grossBaseSalary} lei / {simInputs.workingDaysInMonth * 8}h):</span>
+                  <span className="font-mono font-bold text-gray-900 dark:text-white">{simResult.hourlyRate} RON/h</span>
+                </div>
+
+                {/* Drepturi */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">1. Drepturi Salariale (Brut)</span>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Ore normale ({simInputs.normalHours}h):</span>
+                    <span className="font-mono font-semibold">{simResult.normalIncome.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Ore suplimentare 200% ({simInputs.overtimeHours}h):</span>
+                    <span className="font-mono font-semibold">{simResult.overtimeIncome.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Spor noapte 25% ({simInputs.nightHours}h):</span>
+                    <span className="font-mono font-semibold">{simResult.nightBonus.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                  {simResult.vacationIncome > 0 && (
+                    <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span>Concediu odihnă ({simInputs.vacationDays} zile):</span>
+                      <span className="font-mono font-semibold">{simResult.vacationIncome.toLocaleString('ro-RO')} RON</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Spor ore weekend (1%):</span>
+                    <span className="font-mono font-semibold">{simResult.weekendBonus} RON</span>
+                  </div>
+                  <div className="flex justify-between text-teal-600 dark:text-teal-400 font-medium">
+                    <span>Tichete de masă ({simInputs.mealTicketsCount} buc):</span>
+                    <span className="font-mono font-bold">{simResult.mealTicketsTotal} RON</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-gray-900 dark:text-white pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
+                    <span>TOTAL VENIT BRUT:</span>
+                    <span className="font-mono">{simResult.grossTotal.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                </div>
+
+                {/* Taxe */}
+                <div className="space-y-1.5 pt-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">2. Taxe & Impozite</span>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>CASS Sănătate (10%):</span>
+                    <span className="font-mono text-red-500 font-semibold">- {simResult.cass.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>CAS Pensii (25% fără tichete):</span>
+                    <span className="font-mono text-red-500 font-semibold">- {simResult.cas.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Impozit pe venit (10%):</span>
+                    <span className="font-mono text-red-500 font-semibold">- {simResult.incomeTax.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                </div>
+
+                {/* Rețineri */}
+                <div className="space-y-1.5 pt-2">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">3. Rețineri pe Card</span>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Contravaloare tichete (deja pe cardul de tichete):</span>
+                    <span className="font-mono text-amber-500 font-semibold">- {simResult.mealTicketsTotal} RON</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Avans virat anterior:</span>
+                    <span className="font-mono text-amber-500 font-semibold">- {simResult.advancePayment.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                  <div className="flex justify-between font-black text-emerald-600 dark:text-emerald-400 pt-1 border-t border-gray-200 dark:border-white/10 text-sm">
+                    <span>REST DE PLATĂ FINAL:</span>
+                    <span className="font-mono">{simResult.restDePlata.toLocaleString('ro-RO')} RON</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        /* ================= TAB 2: MODULUL DE AUDIT FINANCIAR („MECANISMUL FABRICII”) ================= */
-        <div className="px-4 space-y-5">
-          {/* INTRODUCTORY CARD */}
-          <div className="bg-white dark:bg-[#132337] rounded-[28px] p-6 shadow-md border border-gray-100 dark:border-white/10 transition-all">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">
-                <ShieldAlert className="w-6 h-6" />
+      )}
+
+      {/* ===================== TAB 2: ÎNCARCĂ FLUTURAȘ & AUDIT ===================== */}
+      {activeTab === 'audit' && (
+        <div className="px-5 space-y-5">
+          {/* SECȚIUNE UPLOAD FOTO FLUTURAȘ */}
+          <div className="bg-white dark:bg-[#132337] rounded-[28px] p-5 border border-gray-100 dark:border-white/10 shadow-sm text-center">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3">
+              <Camera size={24} />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              Încarcă sau Fotografiază Fluturașul
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
+              Facem automat citirea cifrelor prin OCR și le comparăm cu pontajul tău real.
+            </p>
+
+            <label className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm shadow-md cursor-pointer transition-all">
+              <Upload size={16} />
+              <span>{uploadedImage ? 'Schimbă Poza Fluturaș' : 'Selectează Poza Fluturaș'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
+
+            {isOcrProcessing && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900 text-xs font-bold text-blue-600 dark:text-blue-400">
+                <div className="flex items-center justify-center gap-2 mb-1.5">
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Se analizează fluturașul... ({ocrProgress}%)</span>
+                </div>
+                <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* VERDICTUL DE AUDIT */}
+          <div
+            className={`p-4 rounded-[24px] border backdrop-blur-md transition-all ${
+              auditDiffs.isAllMatched
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100'
+                : 'bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-100'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              {auditDiffs.isAllMatched ? (
+                <CheckCircle2 size={24} className="text-emerald-500 shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle size={24} className="text-red-500 shrink-0 mt-0.5" />
+              )}
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Audit Financiar & Fluturaș Fabrică
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-300 mt-1 leading-relaxed">
-                  Fabrica folosește artificiul contabil de a declara jumătate din orele suplimentare la <strong>200%</strong> (pentru a se încadra în plafonul legal). Introdu datele de pe fluturaș pentru reconciliere automată.
+                <h4 className="text-sm font-black tracking-tight">
+                  {auditDiffs.isAllMatched
+                    ? '🟢 Fluturașul este 100% Corect!'
+                    : '🔴 Discrepanțe Identificate în Fluturaș!'}
+                </h4>
+                <p className="text-xs mt-1 leading-relaxed opacity-90">
+                  {auditDiffs.isAllMatched
+                    ? 'Orele de regie, suplimentare și de noapte trecute pe fluturaș corespund cu înregistrările tale din aplicație.'
+                    : auditDiffs.diffOvertime < 0
+                    ? `Fabrica ți-a trecut cu ${Math.abs(auditDiffs.diffOvertime)} ore suplimentare mai puțin! Pierdere estimată: ~${auditDiffs.lostOvertimeMoney} RON net.`
+                    : `Există diferențe între pontajul tău și cifrele de pe fluturaș. Verifică tabelul comparativ de mai jos.`}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* ALERTA AMBER (CHIHLIMBAR) - DACĂ EXISTĂ DISCREPANȚE */}
-          {isAuditTriggered ? (
-            <div className="rounded-[26px] p-5 shadow-lg border-2 border-amber-500 bg-amber-500/15 backdrop-blur-xl animate-pulse">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-7 h-7 text-amber-500 shrink-0 mt-0.5" />
-                <div className="space-y-2">
-                  <h3 className="text-base font-black text-amber-900 dark:text-amber-200 uppercase tracking-wide">
-                    ⚠️ ALERTĂ AUDIT: Discrepanțe Identificate pe Fluturaș!
-                  </h3>
-
-                  {hasDiscrepantaOvertime && (
-                    <div className="text-xs text-amber-950 dark:text-amber-100 space-y-1">
-                      <p>
-                        • <strong>Ore Suplimentare Neplătite:</strong> Ai lucrat în realitate <strong>{oreSuplimentareReale.toFixed(1)} ore suplimentare</strong>. Pe fluturaș apar doar <strong>{fluturasOre200} ore la 200%</strong> (echivalentul a <strong>{oreEchivalenteFabrica.toFixed(1)} ore reale</strong>).
-                      </p>
-                      <p className="font-bold text-amber-800 dark:text-amber-300 bg-amber-500/20 p-2 rounded-lg">
-                        Pierdere estimată la ore: {diferentaOreSuplimentare.toFixed(1)}h × {hourlyRate.toFixed(2)} RON = {baniPierdutiOvertime.toFixed(2)} RON neplătiți!
-                      </p>
-                    </div>
-                  )}
-
-                  {hasDiscrepantaRest && (
-                    <div className="text-xs text-amber-950 dark:text-amber-100">
-                      • <strong>Diferență Rest de Plată:</strong> Conform pontajului trebuia să primești <strong>{restDePlataCalculat.toFixed(2)} RON</strong>, dar pe fluturaș ai înscris <strong>{fluturasRestPlata.toFixed(2)} RON</strong> (diferență: {Math.abs(diferentaRestPlata).toFixed(2)} RON).
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[26px] p-5 shadow-md border border-emerald-500/50 bg-emerald-500/10 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                    Audit Confirmat: Totul corespunde 100%!
-                  </h3>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
-                    Orele suplimentare declarate la 200% acoperă exact orele reale lucrate, iar restul de plată este reconciliat.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* FORMULAR FLUTURAȘ */}
-          <div className="bg-white dark:bg-[#132337] rounded-[26px] p-5 shadow-md border border-gray-100 dark:border-white/10 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-500" />
-              Date Înscrise pe Fluturașul Primit
+          {/* TABEL COMPARATIV CAP-LA-CAP */}
+          <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider pb-2 border-b border-gray-100 dark:border-white/5">
+              Reconciliere Cap-la-Cap (Pontaj vs Fluturaș)
             </h3>
 
-            <div className="space-y-3">
-              {/* Ore Suplimentare 200% */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5">
-                <div>
-                  <label className="text-sm font-bold text-gray-900 dark:text-white block">
-                    Ore Suplimentare pe Fluturaș (cota 200%)
-                  </label>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Echivalent ore reale: {oreEchivalenteFabrica.toFixed(1)}h (din {oreSuplimentareReale.toFixed(1)}h lucrate)
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={fluturasData.oreSuplimentare200}
-                    onChange={(e) => setFluturasData({ ...fluturasData, oreSuplimentare200: e.target.value })}
-                    className="w-20 text-right text-lg font-bold bg-white dark:bg-white/10 px-2 py-1 rounded-xl outline-none border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xs font-bold text-gray-500">h</span>
-                </div>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="text-gray-400 font-bold border-b border-gray-100 dark:border-white/5">
+                    <th className="pb-2">Rubrică</th>
+                    <th className="pb-2 text-center">În Aplicație</th>
+                    <th className="pb-2 text-center">Pe Fluturaș</th>
+                    <th className="pb-2 text-right">Diferență</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-mono">
+                  {/* 1. Ore Regie */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Normale</td>
+                    <td className="text-center font-bold text-blue-600 dark:text-blue-400">{auditDiffs.appNormal}h</td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        value={fluturasInputs.normalHours}
+                        onChange={e => setFluturasInputs({ ...fluturasInputs, normalHours: parseFloat(e.target.value) || 0 })}
+                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                      />
+                    </td>
+                    <td className={`text-right font-bold ${auditDiffs.diffNormal === 0 ? 'text-gray-400' : auditDiffs.diffNormal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffNormal > 0 ? `+${auditDiffs.diffNormal}h` : `${auditDiffs.diffNormal}h`}
+                    </td>
+                  </tr>
 
-              {/* Ore de Noapte Fluturaș */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5">
-                <div>
-                  <label className="text-sm font-bold text-gray-900 dark:text-white block">
-                    Ore de Noapte pe Fluturaș
-                  </label>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Înregistrate în aplicație: {hours.night.toFixed(1)}h
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={fluturasData.oreNoapte}
-                    onChange={(e) => setFluturasData({ ...fluturasData, oreNoapte: e.target.value })}
-                    className="w-20 text-right text-lg font-bold bg-white dark:bg-white/10 px-2 py-1 rounded-xl outline-none border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xs font-bold text-gray-500">h</span>
-                </div>
-              </div>
+                  {/* 2. Ore Suplimentare */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Suplimentare</td>
+                    <td className="text-center font-bold text-purple-600 dark:text-purple-400">{auditDiffs.appOvertime}h</td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        value={fluturasInputs.overtimeHours}
+                        onChange={e => setFluturasInputs({ ...fluturasInputs, overtimeHours: parseFloat(e.target.value) || 0 })}
+                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                      />
+                    </td>
+                    <td className={`text-right font-bold ${auditDiffs.diffOvertime === 0 ? 'text-gray-400' : auditDiffs.diffOvertime < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffOvertime > 0 ? `+${auditDiffs.diffOvertime}h` : `${auditDiffs.diffOvertime}h`}
+                    </td>
+                  </tr>
 
-              {/* Avans Reținut Fluturaș */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5">
-                <div>
-                  <label className="text-sm font-bold text-gray-900 dark:text-white block">
-                    Avans Reținut pe Fluturaș
-                  </label>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Implicit: 1500 RON
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    value={fluturasData.avansRetinut}
-                    onChange={(e) => setFluturasData({ ...fluturasData, avansRetinut: parseFloat(e.target.value) || 0 })}
-                    className="w-24 text-right text-lg font-bold bg-white dark:bg-white/10 px-2 py-1 rounded-xl outline-none border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xs font-bold text-gray-500">RON</span>
-                </div>
-              </div>
+                  {/* 3. Ore de Noapte */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Noapte</td>
+                    <td className="text-center font-bold text-indigo-600 dark:text-indigo-400">{auditDiffs.appNight}h</td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        value={fluturasInputs.nightHours}
+                        onChange={e => setFluturasInputs({ ...fluturasInputs, nightHours: parseFloat(e.target.value) || 0 })}
+                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                      />
+                    </td>
+                    <td className={`text-right font-bold ${auditDiffs.diffNight === 0 ? 'text-gray-400' : auditDiffs.diffNight < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffNight > 0 ? `+${auditDiffs.diffNight}h` : `${auditDiffs.diffNight}h`}
+                    </td>
+                  </tr>
 
-              {/* Tichete Reținute Fluturaș */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 dark:bg-white/5">
-                <div>
-                  <label className="text-sm font-bold text-gray-900 dark:text-white block">
-                    Tichete Reținute pe Fluturaș
-                  </label>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Contravaloare card tichete ({extras.mealTicketsCount} zile × 22 RON)
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    value={fluturasData.ticheteRetinute}
-                    onChange={(e) => setFluturasData({ ...fluturasData, ticheteRetinute: parseFloat(e.target.value) || 0 })}
-                    className="w-24 text-right text-lg font-bold bg-white dark:bg-white/10 px-2 py-1 rounded-xl outline-none border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                  <span className="text-xs font-bold text-gray-500">RON</span>
-                </div>
-              </div>
+                  {/* 4. Tichete Masă */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Tichete Masă</td>
+                    <td className="text-center font-bold text-teal-600 dark:text-teal-400">{auditDiffs.appTickets}</td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        value={fluturasInputs.mealTicketsCount}
+                        onChange={e => setFluturasInputs({ ...fluturasInputs, mealTicketsCount: parseInt(e.target.value) || 0 })}
+                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                      />
+                    </td>
+                    <td className={`text-right font-bold ${auditDiffs.diffTickets === 0 ? 'text-gray-400' : auditDiffs.diffTickets < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffTickets > 0 ? `+${auditDiffs.diffTickets}` : `${auditDiffs.diffTickets}`}
+                    </td>
+                  </tr>
 
-              {/* Rest de Plată Înscris pe Fluturaș */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40">
-                <div>
-                  <label className="text-sm font-black text-blue-950 dark:text-blue-100 block">
-                    Rest de Plată Înscris pe Fluturaș
-                  </label>
-                  <span className="text-xs text-blue-700 dark:text-blue-300">
-                    Suma netă finală virată pe card de fabrică
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    value={fluturasData.restDePlataFluturas}
-                    onChange={(e) => setFluturasData({ ...fluturasData, restDePlataFluturas: parseFloat(e.target.value) || 0 })}
-                    className="w-28 text-right text-xl font-black bg-white dark:bg-white/20 px-3 py-1.5 rounded-xl outline-none border border-blue-300 dark:border-blue-500 text-blue-900 dark:text-white font-mono"
-                  />
-                  <span className="text-xs font-bold text-blue-700">RON</span>
-                </div>
-              </div>
+                  {/* 5. Rest de Plată */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Rest Plată</td>
+                    <td className="text-center font-bold text-emerald-600 dark:text-emerald-400">{simResult.restDePlata} lei</td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        value={fluturasInputs.restDePlata}
+                        onChange={e => setFluturasInputs({ ...fluturasInputs, restDePlata: parseFloat(e.target.value) || 0 })}
+                        className="w-20 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                      />
+                    </td>
+                    <td className={`text-right font-bold ${auditDiffs.diffRestPlata === 0 ? 'text-gray-400' : auditDiffs.diffRestPlata < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffRestPlata > 0 ? `+${auditDiffs.diffRestPlata} lei` : `${auditDiffs.diffRestPlata} lei`}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+
+            <p className="text-[11px] text-gray-400 dark:text-gray-400 pt-2 italic">
+              * Poți ajusta direct cifrele din coloana „Pe Fluturaș” dacă poza a fost parțial neclară.
+            </p>
           </div>
         </div>
       )}
