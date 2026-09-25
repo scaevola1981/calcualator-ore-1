@@ -20,12 +20,6 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Avem nevoie de locația ta pentru a seta punctul de lucru și a monitoriza automat intrarea în zona de lucru.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Avem nevoie de locația ta pentru a detecta automat când ajungi la muncă, chiar și când aplicația este în fundal.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Avem nevoie de locația ta pentru a detecta automat când ajungi la muncă și pentru a seta punctul de lucru.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

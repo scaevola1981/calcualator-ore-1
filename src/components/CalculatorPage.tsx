@@ -12,15 +12,13 @@ import {
   DollarSign,
   ChevronDown,
   ChevronUp,
-  RefreshCw,
-  Info,
-  Calendar
+  RefreshCw
 } from 'lucide-react';
 import type { AppSettings, WorkSession } from '../types';
 import { getLocalISODate } from '../utils/dateUtils';
 import { calculateDurationWithBreak, calculateNightHours } from '../utils/timeRounding';
 import { calculatePayroll, PayrollInputs, PayrollBreakdown } from '../utils/payrollCalculator';
-import { parsePayslipText, ExtractedPayslipData } from '../utils/payslipParser';
+import { parsePayslipText } from '../utils/payslipParser';
 
 interface CalculatorPageProps {
   settings: AppSettings;
@@ -51,7 +49,7 @@ const getWorkingDaysInMonth = (year: number, month: number, holidays: string[] =
 
 export const CalculatorPage: React.FC<CalculatorPageProps> = ({
   settings,
-  onSettingsChange,
+  onSettingsChange: _onSettingsChange,
   workSessions = [],
   referenceDate,
 }) => {
@@ -86,6 +84,8 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
     let nightH = 0;
     const ticketDays = new Set<string>();
 
+    const dailyMap: { [dateStr: string]: { duration: number; isWeekendOrHoliday: boolean } } = {};
+
     workSessions.forEach(session => {
       const sStart = new Date(session.startTime);
       const sEnd = new Date(session.endTime);
@@ -98,17 +98,24 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
         const duration = calculateDurationWithBreak(sStart, sEnd);
         nightH += calculateNightHours(sStart, sEnd);
 
-        if (isWeekend || isHoliday) {
-          overtimeH += duration;
-        } else {
-          if (duration > 0) ticketDays.add(dStr);
-          if (duration <= (settings.normalHoursLimit || 8)) {
-            normalH += duration;
-          } else {
-            normalH += settings.normalHoursLimit || 8;
-            overtimeH += duration - (settings.normalHoursLimit || 8);
-          }
+        if (!dailyMap[dStr]) {
+          dailyMap[dStr] = { duration: 0, isWeekendOrHoliday: isWeekend || isHoliday };
         }
+        dailyMap[dStr].duration += duration;
+      }
+    });
+
+    Object.entries(dailyMap).forEach(([dStr, { duration, isWeekendOrHoliday }]) => {
+      if (isWeekendOrHoliday) {
+        overtimeH += duration > 0.5 ? duration - 0.5 : duration;
+      } else {
+        if (duration > 0) ticketDays.add(dStr);
+        const limit = settings.normalHoursLimit || 8;
+        const norm = Math.min(duration, limit);
+        const rawOvt = Math.max(0, duration - limit);
+        const ovt = rawOvt > 0 ? Math.max(0, rawOvt - 0.5) : 0;
+        normalH += norm;
+        overtimeH += ovt;
       }
     });
 
@@ -137,6 +144,11 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
 
   // Re-sincronizează la schimbarea lunii sau a setărilor
   useEffect(() => {
+    const monthCODays = (settings.specialDays || []).filter(sd => {
+      const [y, m] = sd.date.split('-').map(Number);
+      return y === currentYear && m === (currentMonth + 1) && sd.type === 'CO';
+    }).length;
+
     setSimInputs(prev => ({
       ...prev,
       grossBaseSalary: settings.grossSalary || 7180,
@@ -144,29 +156,32 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
       normalHours: recordedStats.normalHours > 0 ? recordedStats.normalHours : (standardWorkingDays * 8),
       nightHours: recordedStats.nightHours,
       overtimeHours: recordedStats.overtimeHours,
-      mealTicketsCount: recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays,
+      vacationDays: monthCODays,
+      mealTicketsCount: recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : Math.max(0, standardWorkingDays - monthCODays),
       mealTicketValue: settings.mealTicketValue || 22,
       advancePayment: settings.standardAdvance || 1500,
     }));
-  }, [recordedStats, standardWorkingDays, settings.grossSalary, settings.mealTicketValue, settings.standardAdvance]);
+  }, [recordedStats, standardWorkingDays, settings.grossSalary, settings.mealTicketValue, settings.standardAdvance, settings.specialDays, currentYear, currentMonth]);
 
   // Calcul rezultat Simulator
   const simResult: PayrollBreakdown = useMemo(() => {
     return calculatePayroll(simInputs);
   }, [simInputs]);
 
-  // STARE PENTRU MODUL AUDIT FLUTURAȘ
+  // STARE PENTRU MODUL AUDIT FLUTURAȘ (Se populează din OCR sau introducere manuală)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState<number>(0);
   const [fluturasInputs, setFluturasInputs] = useState({
-    normalHours: 152,
-    nightHours: 42.9,
-    overtimeHours: 28,
-    mealTicketsCount: 19,
-    grossTotal: 10777,
-    netSalary: 5980,
-    restDePlata: 4480,
+    normalHours: 0,
+    nightHours: 0,
+    overtimeHours: 0,  // Ore declarate pe fluturaș (la 200%)
+    vacationDays: 0,   // Zile Concediu Odihnă (CO)
+    primaOS: 0,        // Primă ore suplimentare (Prima OS)
+    mealTicketsCount: 0,
+    grossTotal: 0,
+    netSalary: 0,
+    restDePlata: 0,
   });
 
   // Încărcare foto fluturaș & OCR
@@ -195,6 +210,8 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
         normalHours: parsed.normalHours ?? prev.normalHours,
         nightHours: parsed.nightHours ?? prev.nightHours,
         overtimeHours: parsed.overtimeHours ?? prev.overtimeHours,
+        vacationDays: parsed.vacationDays ?? prev.vacationDays,
+        primaOS: parsed.primaOS ?? prev.primaOS,
         mealTicketsCount: parsed.mealTicketsCount ?? prev.mealTicketsCount,
         grossTotal: parsed.grossTotal ?? prev.grossTotal,
         netSalary: parsed.netSalary ?? prev.netSalary,
@@ -210,31 +227,82 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
 
   // AUDIT: Calcule diferențe cap-la-cap (Pontaj Real vs Fluturaș)
   const auditDiffs = useMemo(() => {
-    const appNormal = recordedStats.normalHours > 0 ? recordedStats.normalHours : (standardWorkingDays * 8);
+    const hasFluturasData =
+      fluturasInputs.normalHours > 0 ||
+      fluturasInputs.overtimeHours > 0 ||
+      fluturasInputs.nightHours > 0 ||
+      fluturasInputs.grossTotal > 0 ||
+      fluturasInputs.restDePlata > 0;
+
+    // Dacă nu există pontaj înregistrat pentru luna respectivă,
+    // orele de regie așteptate = (Zile lucrătoare din lună - Zile CO) * 8h
+    const expectedNormalHours = Math.max(0, (standardWorkingDays - (fluturasInputs.vacationDays || 0)) * 8);
+    const appNormal = recordedStats.normalHours > 0 ? recordedStats.normalHours : expectedNormalHours;
     const appOvertime = recordedStats.overtimeHours;
     const appNight = recordedStats.nightHours;
-    const appTickets = recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays;
+    const expectedTickets = Math.max(0, standardWorkingDays - (fluturasInputs.vacationDays || 0));
+    const appTickets = recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : expectedTickets;
 
     const diffNormal = Number((fluturasInputs.normalHours - appNormal).toFixed(1));
-    const diffOvertime = Number((fluturasInputs.overtimeHours - appOvertime).toFixed(1));
-    const diffNight = Number((fluturasInputs.nightHours - appNight).toFixed(1));
-    const diffTickets = fluturasInputs.mealTicketsCount - appTickets;
 
-    // Calcul valoare financiară a diferenței de ore suplimentare (plătite 200%)
-    // Baza orară ~ 42.74 -> 200% = 85.48 brut -> Net ~ 55% din brut = ~47 RON net/oră
-    const netHourlyOvertime = simResult.hourlyRate * 2 * 0.58;
+    // Regula Fabricii: Orele de pe fluturaș la 200% = jumătate din orele reale (1h la 200% = 2h reale)
+    // Dacă în aplicație s-au pontat ore reale (ex: 56h), iar pe fluturaș sunt 28h la 200%, ele sunt 100% egale!
+    const fluturasRealEquivalent = fluturasInputs.overtimeHours * 2;
+    let diffOvertime = 0;
+    let isOvertimeMatched = false;
+
+    if (appOvertime === 0) {
+      // Dacă nu există pontaj salvat pe luna aceasta, considerăm orele de pe fluturaș ca bază de verificare
+      diffOvertime = 0;
+      isOvertimeMatched = true;
+    } else if (Math.abs(fluturasRealEquivalent - appOvertime) < 0.5) {
+      // Aplicația are ore reale (ex: 56h), fluturașul are 28h la 200% -> ECHIVALENTE
+      diffOvertime = 0;
+      isOvertimeMatched = true;
+    } else if (Math.abs(fluturasInputs.overtimeHours - appOvertime) < 0.5) {
+      // Utilizatorul a pontat direct cota declarată (28h)
+      diffOvertime = 0;
+      isOvertimeMatched = true;
+    } else {
+      // Discrepanță față de orele reale
+      diffOvertime = Number((fluturasRealEquivalent - appOvertime).toFixed(1));
+    }
+
+    const diffNight = appNight > 0 ? Number((fluturasInputs.nightHours - appNight).toFixed(1)) : 0;
+    const diffTickets = fluturasInputs.mealTicketsCount > 0 ? fluturasInputs.mealTicketsCount - appTickets : 0;
+
+    // Calcul valoare financiară a diferenței de ore suplimentare
+    const netHourlyOvertime = ((settings.grossSalary || 7180) / (standardWorkingDays * 8)) * 0.58;
     const lostOvertimeMoney = diffOvertime < 0 ? Math.round(Math.abs(diffOvertime) * netHourlyOvertime) : 0;
     const gainedOvertimeMoney = diffOvertime > 0 ? Math.round(diffOvertime * netHourlyOvertime) : 0;
 
-    // Diferență rest de plată față de cel calculat de simulator
-    const diffRestPlata = fluturasInputs.restDePlata - simResult.restDePlata;
+    // Reconciliere Rest de Plată: recalculăm fluturașul conform legii și verificăm dacă suma coincide
+    const calculatedFromFluturas = calculatePayroll({
+      grossBaseSalary: settings.grossSalary || 7180,
+      workingDaysInMonth: standardWorkingDays,
+      normalHours: fluturasInputs.normalHours > 0 ? fluturasInputs.normalHours : appNormal,
+      nightHours: fluturasInputs.nightHours,
+      overtimeHours: fluturasInputs.overtimeHours,
+      vacationDays: fluturasInputs.vacationDays,
+      weekendBonusPercent: 1,
+      primaOS: fluturasInputs.primaOS,
+      mealTicketsCount: fluturasInputs.mealTicketsCount > 0 ? fluturasInputs.mealTicketsCount : appTickets,
+      mealTicketValue: settings.mealTicketValue || 22,
+      advancePayment: settings.standardAdvance || 1500,
+    });
+
+    const diffRestPlata = fluturasInputs.restDePlata > 0 ? fluturasInputs.restDePlata - calculatedFromFluturas.restDePlata : 0;
 
     const isAllMatched =
-      Math.abs(diffOvertime) < 0.5 &&
+      hasFluturasData &&
+      Math.abs(diffNormal) < 0.5 &&
+      isOvertimeMatched &&
       Math.abs(diffNight) < 0.5 &&
-      Math.abs(diffTickets) === 0;
+      Math.abs(diffTickets) === 0 &&
+      Math.abs(diffRestPlata) <= 2; // toleranță de rotunjire de max 2 lei
 
     return {
+      hasFluturasData,
       appNormal,
       appOvertime,
       appNight,
@@ -243,12 +311,14 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
       diffOvertime,
       diffNight,
       diffTickets,
+      fluturasRealEquivalent,
       lostOvertimeMoney,
       gainedOvertimeMoney,
+      calculatedRestPlata: calculatedFromFluturas.restDePlata,
       diffRestPlata,
       isAllMatched,
     };
-  }, [recordedStats, standardWorkingDays, fluturasInputs, simResult]);
+  }, [recordedStats, standardWorkingDays, fluturasInputs, settings]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-36">
@@ -516,7 +586,41 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               </div>
             </div>
 
-            {/* 5. Avans Salariu Reținut */}
+            {/* 5. Primă Ore Suplimentare (Prima OS) */}
+            <div className="pt-1">
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  Primă Ore Suplimentare (Prima OS - RON)
+                </label>
+                <span className="text-[11px] text-gray-400">opțional</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={simInputs.primaOS === 0 ? '' : simInputs.primaOS}
+                  placeholder="0"
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSimInputs({ ...simInputs, primaOS: val === '' ? 0 : Math.max(0, parseFloat(val) || 0) });
+                  }}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                />
+                {simInputs.primaOS > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSimInputs(prev => ({ ...prev, primaOS: 0 }))}
+                    className="px-3 py-2.5 bg-gray-100 dark:bg-white/10 text-xs font-bold text-gray-700 dark:text-gray-300 rounded-xl whitespace-nowrap active:scale-95"
+                  >
+                    Reset 0
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 6. Avans Salariu Reținut */}
             <div className="pt-1">
               <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
                 Avans Reținut (RON)
@@ -587,6 +691,12 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <div className="flex justify-between text-gray-700 dark:text-gray-300">
                       <span>Concediu odihnă ({simInputs.vacationDays} zile):</span>
                       <span className="font-mono font-semibold">{simResult.vacationIncome.toLocaleString('ro-RO')} RON</span>
+                    </div>
+                  )}
+                  {simResult.primaOS > 0 && (
+                    <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                      <span>Primă ore suplimentare (Prima OS):</span>
+                      <span className="font-mono font-semibold">{simResult.primaOS.toLocaleString('ro-RO')} RON</span>
                     </div>
                   )}
                   <div className="flex justify-between text-gray-700 dark:text-gray-300">
@@ -698,35 +808,51 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
           </div>
 
           {/* VERDICTUL DE AUDIT */}
-          <div
-            className={`p-4 rounded-[24px] border backdrop-blur-md transition-all ${
-              auditDiffs.isAllMatched
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100'
-                : 'bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-100'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              {auditDiffs.isAllMatched ? (
-                <CheckCircle2 size={24} className="text-emerald-500 shrink-0 mt-0.5" />
-              ) : (
-                <AlertTriangle size={24} className="text-red-500 shrink-0 mt-0.5" />
-              )}
-              <div>
-                <h4 className="text-sm font-black tracking-tight">
-                  {auditDiffs.isAllMatched
-                    ? '🟢 Fluturașul este 100% Corect!'
-                    : '🔴 Discrepanțe Identificate în Fluturaș!'}
-                </h4>
-                <p className="text-xs mt-1 leading-relaxed opacity-90">
-                  {auditDiffs.isAllMatched
-                    ? 'Orele de regie, suplimentare și de noapte trecute pe fluturaș corespund cu înregistrările tale din aplicație.'
-                    : auditDiffs.diffOvertime < 0
-                    ? `Fabrica ți-a trecut cu ${Math.abs(auditDiffs.diffOvertime)} ore suplimentare mai puțin! Pierdere estimată: ~${auditDiffs.lostOvertimeMoney} RON net.`
-                    : `Există diferențe între pontajul tău și cifrele de pe fluturaș. Verifică tabelul comparativ de mai jos.`}
-                </p>
+          {!auditDiffs.hasFluturasData ? (
+            <div className="p-4 rounded-[24px] border border-blue-500/20 bg-blue-500/5 text-blue-950 dark:text-blue-100 backdrop-blur-md">
+              <div className="flex items-start gap-3">
+                <FileText size={24} className="text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-black tracking-tight">
+                    Audit Fluturaș • {targetDate.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
+                  </h4>
+                  <p className="text-xs mt-1 leading-relaxed opacity-90">
+                    Încarcă o poză cu fluturașul tău sau completează cifrele în coloana „Pe Fluturaș” de mai jos pentru reconciliere automată cu orele din această lună.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div
+              className={`p-4 rounded-[24px] border backdrop-blur-md transition-all ${
+                auditDiffs.isAllMatched
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100'
+                  : 'bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-100'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                {auditDiffs.isAllMatched ? (
+                  <CheckCircle2 size={24} className="text-emerald-500 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle size={24} className="text-red-500 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <h4 className="text-sm font-black tracking-tight">
+                    {auditDiffs.isAllMatched
+                      ? '🟢 Fluturașul este 100% Corect!'
+                      : '🔴 Discrepanțe Identificate în Fluturaș!'}
+                  </h4>
+                  <p className="text-xs mt-1 leading-relaxed opacity-90">
+                    {auditDiffs.isAllMatched
+                      ? 'Orele de regie, suplimentare și de noapte trecute pe fluturaș corespund cu înregistrările tale din aplicație și calculul legal.'
+                      : auditDiffs.diffOvertime < 0
+                      ? `Fabrica ți-a trecut cu ${Math.abs(auditDiffs.diffOvertime)} ore suplimentare reale mai puțin! Pierdere estimată: ~${auditDiffs.lostOvertimeMoney} RON net.`
+                      : `Există diferențe între pontajul tău și cifrele de pe fluturaș. Verifică tabelul comparativ de mai jos.`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TABEL COMPARATIV CAP-LA-CAP */}
           <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm space-y-3">
@@ -747,7 +873,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                 <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-mono">
                   {/* 1. Ore Regie */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Normale</td>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Normale (Regie)</td>
                     <td className="text-center font-bold text-blue-600 dark:text-blue-400">{auditDiffs.appNormal}h</td>
                     <td className="text-center">
                       <input
@@ -767,32 +893,94 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     </td>
                   </tr>
 
-                  {/* 2. Ore Suplimentare */}
+                  {/* 2. Concediu Odihnă (CO) */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Suplimentare</td>
-                    <td className="text-center font-bold text-purple-600 dark:text-purple-400">{auditDiffs.appOvertime}h</td>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Concediu Odihnă (CO)</td>
+                    <td className="text-center font-bold text-gray-600 dark:text-gray-300">
+                      {fluturasInputs.vacationDays} zile ({fluturasInputs.vacationDays * 8}h)
+                    </td>
                     <td className="text-center">
                       <input
                         type="number"
-                        value={fluturasInputs.overtimeHours === 0 ? '' : fluturasInputs.overtimeHours}
+                        min="0"
+                        max="31"
+                        value={fluturasInputs.vacationDays === 0 ? '' : fluturasInputs.vacationDays}
                         placeholder="0"
                         onFocus={e => e.target.select()}
                         onChange={e => {
                           const val = e.target.value;
-                          setFluturasInputs({ ...fluturasInputs, overtimeHours: val === '' ? 0 : parseFloat(val) || 0 });
+                          setFluturasInputs({ ...fluturasInputs, vacationDays: val === '' ? 0 : parseInt(val) || 0 });
                         }}
                         className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffOvertime === 0 ? 'text-gray-400' : auditDiffs.diffOvertime < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                      {auditDiffs.diffOvertime > 0 ? `+${auditDiffs.diffOvertime}h` : `${auditDiffs.diffOvertime}h`}
+                    <td className="text-right font-bold text-gray-400">
+                      0 zile
                     </td>
                   </tr>
 
-                  {/* 3. Ore de Noapte */}
+                  {/* 3. Ore Suplimentare (200% vs Reale) */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Noapte</td>
-                    <td className="text-center font-bold text-indigo-600 dark:text-indigo-400">{auditDiffs.appNight}h</td>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">
+                      <div>Ore Suplimentare</div>
+                      <div className="text-[10px] text-gray-400 font-normal">Fabrică plătește 200% (1:2)</div>
+                    </td>
+                    <td className="text-center font-bold text-purple-600 dark:text-purple-400">
+                      {auditDiffs.appOvertime > 0 ? `${auditDiffs.appOvertime}h` : `${auditDiffs.fluturasRealEquivalent}h echiv.`}
+                    </td>
+                    <td className="text-center">
+                      <div className="flex flex-col items-center">
+                        <input
+                          type="number"
+                          value={fluturasInputs.overtimeHours === 0 ? '' : fluturasInputs.overtimeHours}
+                          placeholder="0"
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setFluturasInputs({ ...fluturasInputs, overtimeHours: val === '' ? 0 : parseFloat(val) || 0 });
+                          }}
+                          className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        />
+                        <span className="text-[10px] text-purple-500 font-bold mt-0.5">
+                          = {fluturasInputs.overtimeHours * 2}h reale
+                        </span>
+                      </div>
+                    </td>
+                    <td className={`text-right font-bold ${auditDiffs.diffOvertime === 0 ? 'text-emerald-500' : auditDiffs.diffOvertime < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffOvertime === 0 ? '0h (100% OK)' : auditDiffs.diffOvertime > 0 ? `+${auditDiffs.diffOvertime}h` : `${auditDiffs.diffOvertime}h`}
+                    </td>
+                  </tr>
+
+                  {/* 4. Primă OS */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Primă OS</td>
+                    <td className="text-center font-bold text-gray-600 dark:text-gray-300">
+                      {fluturasInputs.primaOS} lei
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="number"
+                        value={fluturasInputs.primaOS === 0 ? '' : fluturasInputs.primaOS}
+                        placeholder="0"
+                        onFocus={e => e.target.select()}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFluturasInputs({ ...fluturasInputs, primaOS: val === '' ? 0 : parseFloat(val) || 0 });
+                        }}
+                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                      />
+                    </td>
+                    <td className="text-right font-bold text-emerald-500">
+                      0 lei
+                    </td>
+                  </tr>
+
+                  {/* 5. Ore de Noapte */}
+                  <tr>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Noapte (25%)</td>
+                    <td className="text-center font-bold text-indigo-600 dark:text-indigo-400">
+                      {auditDiffs.appNight > 0 ? `${auditDiffs.appNight}h` : `${fluturasInputs.nightHours}h`}
+                    </td>
                     <td className="text-center">
                       <input
                         type="number"
@@ -811,7 +999,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     </td>
                   </tr>
 
-                  {/* 4. Tichete Masă */}
+                  {/* 6. Tichete Masă */}
                   <tr>
                     <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Tichete Masă</td>
                     <td className="text-center font-bold text-teal-600 dark:text-teal-400">{auditDiffs.appTickets}</td>
@@ -833,10 +1021,15 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     </td>
                   </tr>
 
-                  {/* 5. Rest de Plată */}
+                  {/* 7. Rest de Plată */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Rest Plată</td>
-                    <td className="text-center font-bold text-emerald-600 dark:text-emerald-400">{simResult.restDePlata} lei</td>
+                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">
+                      <div>Rest Plată (Lichidare)</div>
+                      <div className="text-[10px] text-gray-400 font-normal">Calculat vs Fluturaș</div>
+                    </td>
+                    <td className="text-center font-bold text-emerald-600 dark:text-emerald-400">
+                      {auditDiffs.calculatedRestPlata.toLocaleString('ro-RO')} lei
+                    </td>
                     <td className="text-center">
                       <input
                         type="number"
@@ -850,8 +1043,8 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                         className="w-20 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
                       />
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffRestPlata === 0 ? 'text-gray-400' : auditDiffs.diffRestPlata < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                      {auditDiffs.diffRestPlata > 0 ? `+${auditDiffs.diffRestPlata} lei` : `${auditDiffs.diffRestPlata} lei`}
+                    <td className={`text-right font-bold ${auditDiffs.diffRestPlata === 0 ? 'text-emerald-500' : Math.abs(auditDiffs.diffRestPlata) <= 2 ? 'text-emerald-500' : auditDiffs.diffRestPlata < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffRestPlata === 0 ? '0 lei (Match!)' : auditDiffs.diffRestPlata > 0 ? `+${auditDiffs.diffRestPlata} lei` : `${auditDiffs.diffRestPlata} lei`}
                     </td>
                   </tr>
                 </tbody>

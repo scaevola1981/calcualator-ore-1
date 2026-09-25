@@ -1,106 +1,38 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Sun,
   Moon,
   DollarSign,
-  MapPin,
-  AlertCircle,
-  RotateCw
+  RotateCw,
+  User,
+  Shield,
+  Download,
+  Upload,
+  Bell,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
-import type { AppSettings } from '../types';
-import type { GeofencingState } from '../hooks/useGeofencing';
-import { GeofenceMapModal } from './GeofenceMapModal';
-import { Geolocation } from '@capacitor/geolocation';
+import type { AppSettings, WorkSession } from '../types';
+import { exportBackupToFile, parseBackupData } from '../utils/backupService';
 
 interface SettingsPageProps {
   settings: AppSettings;
   onSettingsChange: (newSettings: AppSettings) => void;
-  geofenceState?: GeofencingState;
+  workSessions?: WorkSession[];
+  onSessionsChange?: (newSessions: WorkSession[]) => void;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettingsChange, geofenceState }) => {
-  const [showMapModal, setShowMapModal] = useState(false);
-  const [tempCoordinates, setTempCoordinates] = useState<{ lat: number; lng: number } | null>(null);
-  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
-
-  const handleSetWorkPoint = async () => {
-    setIsCapturingLocation(true);
-    setPermissionError(null);
-
-    try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      });
-
-      const lat = Number.isFinite(position?.coords?.latitude)
-        ? position.coords.latitude
-        : (Number.isFinite(settings.gateLatitude) ? settings.gateLatitude! : 44.4268);
-      const lng = Number.isFinite(position?.coords?.longitude)
-        ? position.coords.longitude
-        : (Number.isFinite(settings.gateLongitude) ? settings.gateLongitude! : 26.1025);
-      setTempCoordinates({ lat, lng });
-      setShowMapModal(true);
-    } catch (err: any) {
-      console.error('Error getting location:', err);
-      if (err.message && err.message.includes('denied')) {
-        setPermissionError('denied');
-      } else {
-        setPermissionError('generic');
-      }
-      const fallbackLat = Number.isFinite(settings.gateLatitude) ? settings.gateLatitude! : 44.4268;
-      const fallbackLng = Number.isFinite(settings.gateLongitude) ? settings.gateLongitude! : 26.1025;
-      setTempCoordinates({
-        lat: fallbackLat,
-        lng: fallbackLng
-      });
-      setShowMapModal(true);
-    } finally {
-      setIsCapturingLocation(false);
-    }
-  };
-
-  const handleMapConfirm = (lat: number, lng: number, radius?: number) => {
-    onSettingsChange({
-      ...settings,
-      gateLatitude: lat,
-      gateLongitude: lng,
-      geofenceRadius: radius || settings.geofenceRadius || 400,
-      geofencingEnabled: true
-    });
-    setShowMapModal(false);
-    setTempCoordinates(null);
-  };
-
-  const handleMapCancel = () => {
-    setShowMapModal(false);
-    setTempCoordinates(null);
-  };
-
-  const handleToggleGps = async (enabled: boolean) => {
-    if (enabled) {
-      try {
-        const perm = await Geolocation.checkPermissions();
-        if (perm.location !== 'granted') {
-          const req = await Geolocation.requestPermissions();
-          if (req.location !== 'granted') {
-            setPermissionError('denied');
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('Eroare verificare permisiuni GPS:', e);
-      }
-    }
-    onSettingsChange({ ...settings, geofencingEnabled: enabled });
-    if (enabled && geofenceState?.refreshPosition) {
-      setTimeout(() => geofenceState.refreshPosition(), 300);
-    }
-  };
-
-  const appVersion = "6.2.0";
+export const SettingsPage: React.FC<SettingsPageProps> = ({
+  settings,
+  onSettingsChange,
+  workSessions = [],
+  onSessionsChange,
+}) => {
+  const appVersion = "6.3.0";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [backupMessage, setBackupMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [pendingImportContent, setPendingImportContent] = useState<string | null>(null);
 
   return (
     <div className="space-y-5 animate-fade-in pb-48 px-4">
@@ -110,7 +42,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
           Setări ⚙️
         </h1>
         <p className="text-white/90 text-xs sm:text-sm font-medium">
-          Personalizează tematica, salariul și geofencing-ul GPS
+          Personalizează tematica și valorile financiare
         </p>
       </header>
 
@@ -237,158 +169,280 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
         </div>
       </div>
 
-      {/* 3. AUTOMATIZARE GPS (GEOFENCING) */}
-      <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] p-6 shadow-md dark:shadow-black/40 backdrop-blur-xl transition-all space-y-5">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400">
-              <MapPin className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Automatizare GPS</h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
-                Pontaj automat la sosirea și plecarea de la muncă
-              </p>
-            </div>
+      {/* 3. DATE IDENTIFICARE SALARIAT & RAPORTARE OFICIALĂ */}
+      <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] p-6 shadow-md dark:shadow-black/40 backdrop-blur-xl transition-all space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <User className="w-6 h-6" />
           </div>
-
-          {/* Toggle Switch */}
-          <div className="bg-gray-100 dark:bg-black/40 p-1 rounded-full flex items-center border border-gray-200/50 dark:border-white/5">
-            <button
-              onClick={() => handleToggleGps(false)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                !settings.geofencingEnabled
-                  ? 'bg-white text-gray-900 shadow-md scale-105'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              OFF
-            </button>
-            <button
-              onClick={() => handleToggleGps(true)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                settings.geofencingEnabled
-                  ? 'bg-teal-500 text-white shadow-md scale-105'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              ON
-            </button>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Date Salariat & Pontaj Oficial</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Informații afișate în rapoartele PDF și Excel</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          {/* Buton Setare Locație */}
+        <div className="space-y-3">
+          {/* Nume și Prenume */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+              Nume și Prenume
+            </label>
+            <input
+              type="text"
+              value={settings.userName || ''}
+              onChange={(e) => onSettingsChange({ ...settings, userName: e.target.value })}
+              className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-gray-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+              placeholder="Dorobanțu Nicolae-Florin"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Marcă Angajat */}
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+                Marcă Angajat
+              </label>
+              <input
+                type="text"
+                value={settings.employeeId || ''}
+                onChange={(e) => onSettingsChange({ ...settings, employeeId: e.target.value })}
+                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-gray-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                placeholder="AFD1270"
+              />
+            </div>
+
+            {/* Funcție */}
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+                Funcție / Calificare
+              </label>
+              <input
+                type="text"
+                value={settings.jobTitle || ''}
+                onChange={(e) => onSettingsChange({ ...settings, jobTitle: e.target.value })}
+                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-gray-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                placeholder="Lăcătuș mecanic"
+              />
+            </div>
+          </div>
+
+          {/* Companie */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+              Companie / Angajator
+            </label>
+            <input
+              type="text"
+              value={settings.companyName || ''}
+              onChange={(e) => onSettingsChange({ ...settings, companyName: e.target.value })}
+              className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-gray-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+              placeholder="AVICARVIL FOOD & DISTRIBUTION"
+            />
+          </div>
+
+          {/* Departament */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+              Departament / Secție
+            </label>
+            <input
+              type="text"
+              value={settings.department || ''}
+              onChange={(e) => onSettingsChange({ ...settings, department: e.target.value })}
+              className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-gray-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+              placeholder="Întreținere și mentenanță"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. ALERTE INTELIGENTE & NOTIFICĂRI DE TURĂ */}
+      <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] p-6 shadow-md dark:shadow-black/40 backdrop-blur-xl transition-all space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <Bell className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Alerte Inteligente de Tură</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Notificări automate la 8 ore și 12 ore de lucru</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
+          <div className="pr-4">
+            <span className="text-sm font-bold text-gray-900 dark:text-white block">
+              Avertizări depășire normă & tură lungă
+            </span>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Notificare când completezi norma de 8 ore (încep orele suplimentare) și memento de siguranță dacă pontajul depășește 12 ore.
+            </p>
+          </div>
           <button
-            onClick={handleSetWorkPoint}
-            disabled={isCapturingLocation}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-98 rounded-2xl py-4 text-white font-bold flex items-center justify-center gap-2.5 transition-all shadow-md shadow-blue-500/20"
+            type="button"
+            onClick={() => onSettingsChange({ ...settings, smartAlertsEnabled: !(settings.smartAlertsEnabled ?? true) })}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 focus:outline-none shrink-0 ${
+              (settings.smartAlertsEnabled ?? true) ? 'bg-blue-600 justify-end' : 'bg-gray-300 dark:bg-gray-700 justify-start'
+            }`}
           >
-            <MapPin className="w-5 h-5" />
-            <span>{isCapturingLocation ? 'Se capturează GPS...' : 'Setează Punct de Lucru'}</span>
+            <div className="w-6 h-6 rounded-full bg-white shadow-md transition-transform" />
+          </button>
+        </div>
+      </div>
+
+      {/* 5. SIGURANȚĂ DATE & BACKUP */}
+      <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] p-6 shadow-md dark:shadow-black/40 backdrop-blur-xl transition-all space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Siguranță Date & Backup</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {workSessions.length} sesiuni salvate local în telefon
+            </p>
+          </div>
+        </div>
+
+        {backupMessage && (
+          <div className={`p-3.5 rounded-2xl text-xs font-bold flex items-center gap-2 ${
+            backupMessage.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+              : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+          }`}>
+            {backupMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+            <span>{backupMessage.text}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* Export */}
+          <button
+            onClick={() => {
+              try {
+                exportBackupToFile(workSessions, settings);
+                setBackupMessage({
+                  text: `Backup generat cu succes! Fișierul conține ${workSessions.length} sesiuni și toate setările.`,
+                  type: 'success',
+                });
+                setTimeout(() => setBackupMessage(null), 5000);
+              } catch (err) {
+                setBackupMessage({
+                  text: 'Eroare la generarea fișierului de backup.',
+                  type: 'error',
+                });
+              }
+            }}
+            className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-98 shadow-xs"
+          >
+            <Download size={16} />
+            <span>Exportă Backup (Fișier JSON)</span>
           </button>
 
-          {permissionError && (
-            <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl text-amber-800 dark:text-amber-300 text-xs font-medium">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-500" />
-              <span>
-                {permissionError === 'denied'
-                  ? 'Accesul la locație a fost refuzat. Activează permisiunea din setările telefonului.'
-                  : 'Nu s-a putut obține locația GPS exactă. S-au folosit coordonate implicite pe care le poți ajusta pe hartă.'}
-              </span>
-            </div>
-          )}
-
-          {/* Locație Activă */}
-          <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 text-center">
-            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              Coordonate Punct de Lucru
-            </p>
-            {settings.gateLatitude ? (
-              <p className="font-mono text-gray-900 dark:text-white text-sm font-bold">
-                {settings.gateLatitude.toFixed(5)}, {settings.gateLongitude?.toFixed(5)}
-              </p>
-            ) : (
-              <p className="text-gray-400 dark:text-gray-500 text-xs italic">
-                Nespecificate (Apasă butonul de mai sus pentru setare)
-              </p>
-            )}
-          </div>
-
-          {/* Status Live Geofence */}
-          {settings.geofencingEnabled && settings.gateLatitude && (
-            <div className={`p-4 rounded-2xl border text-xs flex flex-col gap-2.5 transition-all ${
-              geofenceState?.isInZone
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
-                : geofenceState?.error
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
-                : 'bg-blue-500/10 border-blue-500/30 text-blue-900 dark:text-blue-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 font-bold">
-                  <span className={`w-2.5 h-2.5 rounded-full ${geofenceState?.isInZone ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
-                  <span className="text-xs">
-                    {geofenceState?.isInZone
-                      ? '🟢 În raza punctului de lucru (Pontaj activ)'
-                      : geofenceState?.error
-                      ? `⚠️ ${geofenceState.error}`
-                      : '⚪ În afara razei punctului de lucru'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => geofenceState?.refreshPosition()}
-                  className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-white/10 hover:bg-white text-[11px] font-bold shadow-sm transition-all text-gray-800 dark:text-white"
-                >
-                  Actualizează GPS
-                </button>
-              </div>
-
-              <div className="flex justify-between items-center text-[11px] opacity-90 font-medium">
-                <span>Distanță față de punct:</span>
-                <span className="font-mono font-bold">
-                  {geofenceState?.currentDistance !== null && geofenceState?.currentDistance !== undefined
-                    ? (geofenceState.currentDistance > 1000
-                        ? `${(geofenceState.currentDistance / 1000).toFixed(2)} km`
-                        : `${geofenceState.currentDistance} m`)
-                    : 'Se determină...'}
-                </span>
-              </div>
-
-              {geofenceState?.accuracy && (
-                <div className="flex justify-between items-center text-[10px] opacity-75">
-                  <span>Acuratețe semnal GPS:</span>
-                  <span className="font-mono">±{geofenceState.accuracy}m</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Rază Slider */}
+          {/* Import */}
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Rază Geofence
-              </label>
-              <span className="text-sm font-bold font-mono text-blue-600 dark:text-blue-400">
-                {settings.geofenceRadius || 400}m
-              </span>
-            </div>
             <input
-              type="range"
-              min="100"
-              max="1000"
-              step="50"
-              value={settings.geofenceRadius || 400}
-              onChange={(e) => onSettingsChange({ ...settings, geofenceRadius: parseInt(e.target.value) })}
-              className="w-full accent-blue-600"
+              type="file"
+              ref={fileInputRef}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const content = event.target?.result as string;
+                  if (content) {
+                    setPendingImportContent(content);
+                    setShowImportConfirm(true);
+                  }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+              }}
+              accept=".json"
+              className="hidden"
             />
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono mt-1">
-              <span>100m</span>
-              <span>500m</span>
-              <span>1000m</span>
-            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-98 shadow-xs"
+            >
+              <Upload size={16} />
+              <span>Restaurează din Backup (Import)</span>
+            </button>
           </div>
         </div>
+
+        {/* Modal Confirmare Import */}
+        {showImportConfirm && (
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 space-y-3 animate-fade-in">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-bold text-xs">
+              <AlertTriangle size={16} />
+              <span>Cum dorești să aplici restaurarea datelor?</span>
+            </div>
+            <p className="text-[11px] text-gray-600 dark:text-gray-300">
+              Poți îmbina datele din backup cu cele existente (fără duplicate) sau poți înlocui complet istoricul actual.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (!pendingImportContent) return;
+                  const result = parseBackupData(pendingImportContent, workSessions, 'merge');
+                  if (result.success && result.sessions) {
+                    if (onSessionsChange) onSessionsChange(result.sessions);
+                    if (result.settings) onSettingsChange({ ...settings, ...result.settings });
+                    setBackupMessage({
+                      text: `${result.message} (Îmbinare fără duplicate).`,
+                      type: 'success',
+                    });
+                  } else {
+                    setBackupMessage({
+                      text: result.message || 'Format de backup invalid.',
+                      type: 'error',
+                    });
+                  }
+                  setShowImportConfirm(false);
+                  setPendingImportContent(null);
+                  setTimeout(() => setBackupMessage(null), 6000);
+                }}
+                className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all active:scale-95"
+              >
+                Îmbină datele (Recomandat)
+              </button>
+              <button
+                onClick={() => {
+                  if (!pendingImportContent) return;
+                  const result = parseBackupData(pendingImportContent, workSessions, 'replace');
+                  if (result.success && result.sessions) {
+                    if (onSessionsChange) onSessionsChange(result.sessions);
+                    if (result.settings) onSettingsChange({ ...settings, ...result.settings });
+                    setBackupMessage({
+                      text: `${result.message} (Înlocuire completă).`,
+                      type: 'success',
+                    });
+                  } else {
+                    setBackupMessage({
+                      text: result.message || 'Format de backup invalid.',
+                      type: 'error',
+                    });
+                  }
+                  setShowImportConfirm(false);
+                  setPendingImportContent(null);
+                  setTimeout(() => setBackupMessage(null), 6000);
+                }}
+                className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all active:scale-95"
+              >
+                Înlocuiește tot
+              </button>
+              <button
+                onClick={() => {
+                  setShowImportConfirm(false);
+                  setPendingImportContent(null);
+                }}
+                className="py-2 px-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs"
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* RESET / REFRESH APP BUTTON */}
@@ -416,21 +470,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSettings
           TikTok Work v{appVersion} • {settings.userName || 'Alex'}
         </p>
       </div>
-
-      {/* MAP MODAL */}
-      {showMapModal && tempCoordinates && (
-        <GeofenceMapModal
-          isOpen={showMapModal}
-          currentLat={tempCoordinates.lat}
-          currentLng={tempCoordinates.lng}
-          initialLat={tempCoordinates.lat}
-          initialLng={tempCoordinates.lng}
-          initialRadius={settings.geofenceRadius || 400}
-          radius={settings.geofenceRadius || 400}
-          onConfirm={handleMapConfirm}
-          onCancel={handleMapCancel}
-        />
-      )}
     </div>
   );
 };

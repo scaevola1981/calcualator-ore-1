@@ -3,6 +3,7 @@ export interface ExtractedPayslipData {
   nightHours: number | null;
   overtimeHours: number | null;
   vacationDays: number | null;
+  primaOS: number | null;
   mealTicketsCount: number | null;
   grossTotal: number | null;
   netSalary: number | null;
@@ -38,6 +39,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
   let nightHours: number | null = null;
   let overtimeHours: number | null = null;
   let vacationDays: number | null = null;
+  let primaOS: number | null = null;
   let mealTicketsCount: number | null = null;
   let grossTotal: number | null = null;
   let netSalary: number | null = null;
@@ -80,7 +82,18 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
       }
     }
 
-    // 4. Concediu odihnă (CO)
+    // 4. Prima OS
+    if (lower.includes('prima os') || lower.includes('prima_os') || (lower.includes('prima') && lower.includes('os'))) {
+      const matches = [...line.matchAll(/(\d+[\.,]?\d*)/g)];
+      for (const m of matches) {
+        const val = cleanNumber(m[1]);
+        if (val !== null && val >= 50 && val <= 5000 && Math.abs(val - 42.74) > 1) {
+          primaOS = val;
+        }
+      }
+    }
+
+    // 5. Concediu odihnă (CO)
     if (lower.includes('co') && (lower.includes('zile') || lower.includes('odihn') || lower.match(/\bco\b/))) {
       const matches = [...line.matchAll(/(\d+[\.,]?\d*)/g)];
       for (const m of matches) {
@@ -92,7 +105,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
       }
     }
 
-    // 5. Tichete masă
+    // 6. Tichete masă
     if (lower.includes('tichet') && !lower.includes('(-)')) {
       const matches = [...line.matchAll(/(\d+[\.,]?\d*)/g)];
       for (const m of matches) {
@@ -104,7 +117,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
       }
     }
 
-    // 6. Venit brut
+    // 7. Venit brut
     if (lower.includes('venit brut') || lower.includes('brut')) {
       const matches = [...line.matchAll(/(\d+[\.,\d]*)/g)];
       for (const m of matches) {
@@ -115,7 +128,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
       }
     }
 
-    // 7. Salariu net
+    // 8. Salariu net
     if (lower.includes('salariu net')) {
       const matches = [...line.matchAll(/(\d+[\.,\d]*)/g)];
       for (const m of matches) {
@@ -126,7 +139,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
       }
     }
 
-    // 8. Rest de plată
+    // 9. Rest de plată
     if (lower.includes('rest plata') || lower.includes('rest de plata')) {
       const matches = [...line.matchAll(/(\d+[\.,\d]*)/g)];
       for (const m of matches) {
@@ -137,7 +150,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
       }
     }
 
-    // 9. Avans salariu
+    // 10. Avans salariu
     if (lower.includes('avans')) {
       const matches = [...line.matchAll(/(\d+[\.,\d]*)/g)];
       for (const m of matches) {
@@ -155,6 +168,7 @@ export function parsePayslipText(text: string): ExtractedPayslipData {
     nightHours,
     overtimeHours,
     vacationDays,
+    primaOS,
     mealTicketsCount,
     grossTotal,
     netSalary,

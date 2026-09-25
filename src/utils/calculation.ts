@@ -2,7 +2,7 @@ export const splitHoursByDay = (
   totalHours: number,
   date: Date,
   normalLimit: number = 8,
-  hasNoLimit: boolean,
+  hasNoLimit: boolean = false,
   legalHolidays: string[] = []
 ): { normalHours: number; overtimeHours: number } => {
   const day = date.getDay();
@@ -14,9 +14,10 @@ export const splitHoursByDay = (
 
   if (isWeekend || isLegalHoliday) {
     if (hasNoLimit) {
-        return { normalHours: totalHours, overtimeHours: 0 };
+      return { normalHours: totalHours, overtimeHours: 0 };
     }
-    return { normalHours: 0, overtimeHours: totalHours };
+    const overtimeHours = totalHours > 0.5 ? totalHours - 0.5 : totalHours;
+    return { normalHours: 0, overtimeHours };
   }
 
   if (hasNoLimit) {
@@ -24,7 +25,10 @@ export const splitHoursByDay = (
   }
 
   const normalHours = Math.min(totalHours, normalLimit);
-  const overtimeHours = Math.max(0, totalHours - normalLimit);
+  const rawOvertime = Math.max(0, totalHours - normalLimit);
+  // Se scade jumătatea de oră (30 min) exclusiv din orele suplimentare
+  // Ex: 8h normale + 2h suplimentare => 8h normale și 1.5h suplimentare
+  const overtimeHours = rawOvertime > 0 ? Math.max(0, rawOvertime - 0.5) : 0;
 
   return { normalHours, overtimeHours };
 };

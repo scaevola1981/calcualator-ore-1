@@ -8,6 +8,14 @@ export interface WorkSession {
 
 export type SalaryMode = 'hourly' | 'monthly';
 
+export type SpecialDayType = 'CO' | 'CM' | 'RECUPERARE' | 'INVOIRE' | 'LIBER_PLATIT';
+
+export interface SpecialDay {
+  date: string; // YYYY-MM-DD
+  type: SpecialDayType;
+  notes?: string;
+}
+
 export interface AppSettings {
   normalHoursLimit: number;
   hasNoLimit: boolean; // Legacy - kept for compatibility, always false (detailed mode)
@@ -26,15 +34,16 @@ export interface AppSettings {
 
   theme: 'light' | 'dark';
   legalHolidays: string[];
-  // User Settings
+  // User & Employee Settings (Pentru Rapoarte & Pontaj)
   userName?: string;
+  employeeId?: string;      // Marca (ex: AFD1270)
+  companyName?: string;     // Companie / Punct de lucru (ex: AVICARVIL FOOD & DISTRIBUTION)
+  department?: string;      // Departament (ex: Întreținere și mentenanță)
+  jobTitle?: string;        // Funcție (ex: Lăcătuș mecanic)
   standardAdvance?: number;
   mealTicketValue?: number;
 
-  // Agent ZONA - Geofencing
-  geofencingEnabled?: boolean;
-  gateLatitude?: number;
-  gateLongitude?: number;
-  geofenceRadius?: number; // in meters
+  specialDays?: SpecialDay[]; // Zile speciale: CO, CM, Recuperare, etc.
+  smartAlertsEnabled?: boolean; // Alerte inteligente la 8h și 12h
   notificationSoundEnabled?: boolean; // Enable/disable notification sounds
 }

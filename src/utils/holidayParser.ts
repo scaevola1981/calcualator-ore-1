@@ -76,12 +76,10 @@ export async function parseDatesFromImageFile(file: File, defaultYear?: number):
   // Dynamically import to keep bundle small when unused
   // @ts-ignore
   const { createWorker } = await import('tesseract.js');
-  const worker = await createWorker({ logger: () => {} });
+  // @ts-ignore
+  const worker = await createWorker('eng+rum');
   try {
-    await worker.load();
-    await worker.loadLanguage('eng+rum');
-    await worker.initialize('eng+rum');
-    const { data } = await worker.recognize(file);
+    const { data } = await (worker as any).recognize(file);
     const text = data?.text || '';
     return parseDatesFromText(text, defaultYear);
   } finally {

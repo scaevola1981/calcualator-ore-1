@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import type { WorkSession, AppSettings } from "../types";
+import type { WorkSession, AppSettings, SpecialDay, SpecialDayType } from "../types";
 import {
   BookOpen,
   Clock,
@@ -10,6 +10,9 @@ import {
   Plus,
   Trash2,
   Pencil,
+  FileSpreadsheet,
+  Zap,
+  Check,
 } from "lucide-react";
 import {
   calculateEffectiveHourlyRate,
@@ -17,6 +20,8 @@ import {
   calculateDurationWithBreak,
 } from "../utils/timeRounding";
 import { getLocalISODate } from '../utils/dateUtils';
+import { MonthlyReportModal } from "./MonthlyReportModal";
+import { SHIFT_PRESETS, createSessionFromPreset, ShiftPreset } from "../utils/shiftPresets";
 
 interface HistoryPageProps {
   workSessions: WorkSession[];
@@ -65,6 +70,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   onDeleteSession,
   onAddSession,
   onUpdateSession,
+  onSettingsChange,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -78,12 +84,52 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
   // Manual Entry / Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | number | null>(null);
   const [startHour, setStartHour] = useState("06");
   const [startMinute, setStartMinute] = useState("30");
   const [endHour, setEndHour] = useState("15");
   const [endMinute, setEndMinute] = useState("00");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Special Days Map
+  const specialDaysMap = useMemo(() => {
+    const map = new Map<string, SpecialDay>();
+    (settings.specialDays || []).forEach(sd => {
+      map.set(sd.date, sd);
+    });
+    return map;
+  }, [settings.specialDays]);
+
+  const selectedDateKey = selectedDate ? getLocalISODate(selectedDate) : null;
+  const selectedSpecialDay = selectedDateKey ? specialDaysMap.get(selectedDateKey) : null;
+
+  const handleToggleSpecialDay = (type: SpecialDayType) => {
+    if (!selectedDateKey) return;
+    const currentList = settings.specialDays || [];
+    const exists = currentList.find(sd => sd.date === selectedDateKey);
+
+    let updatedList: SpecialDay[];
+    if (exists && exists.type === type) {
+      updatedList = currentList.filter(sd => sd.date !== selectedDateKey);
+    } else {
+      updatedList = currentList.filter(sd => sd.date !== selectedDateKey).concat({
+        date: selectedDateKey,
+        type,
+      });
+    }
+
+    onSettingsChange({
+      ...settings,
+      specialDays: updatedList,
+    });
+  };
+
+  const handleApplyPreset = (preset: ShiftPreset) => {
+    if (!selectedDate) return;
+    const session = createSessionFromPreset(preset, selectedDate);
+    onAddSession(session);
+  };
 
   // Reset selected date if it falls out of filter (optional, but good UX)
   useEffect(() => {
@@ -169,18 +215,25 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       const isHoliday = settings.legalHolidays?.includes(dateKey);
 
       if (isWeekend || isHoliday) {
-        // Toate orele din zi de weekend sau sărbătoare legală sunt ore suplimentare
+        // Toate orele din zi de weekend sau sărbătoare legală sunt ore suplimentare (minus 0.5h pauză)
         summary.normalHours = 0;
-        summary.overtimeHours = totalHours;
+        summary.overtimeHours = totalHours > 0.5 ? totalHours - 0.5 : totalHours;
+        summary.totalHours = summary.overtimeHours;
         const salaryCalc = calculateSalary(0, summary.overtimeHours, effectiveRate, settings.overtimeMultiplier ?? 1);
         summary.dailyPay = salaryCalc.totalPay;
       } else if (settings.hasNoLimit) {
         summary.normalHours = totalHours;
         summary.overtimeHours = 0;
+        summary.totalHours = totalHours;
         summary.dailyPay = totalHours * effectiveRate;
       } else {
         summary.normalHours = Math.min(totalHours, settings.normalHoursLimit);
-        summary.overtimeHours = Math.max(0, totalHours - settings.normalHoursLimit);
+        const rawOvertime = Math.max(0, totalHours - settings.normalHoursLimit);
+        // Scădere jumătate de oră (30 min) exclusiv din orele suplimentare
+        // Ex: 8h normale + 2h suplimentare => 8h normale și 1.5h suplimentare
+        summary.overtimeHours = rawOvertime > 0 ? Math.max(0, rawOvertime - 0.5) : 0;
+        summary.totalHours = summary.normalHours + summary.overtimeHours;
+
         // Calculate with overtime consideration
         const salaryCalc = calculateSalary(
           summary.normalHours,
@@ -392,13 +445,23 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       <div className="bg-gradient-to-r from-[#0284C7] to-[#0072FF] dark:from-[#0C3058] dark:to-[#123E6E] p-6 rounded-[28px] shadow-lg dark:shadow-black/40 border border-sky-400/30 dark:border-white/10 relative overflow-hidden mx-2 mb-4 text-white transition-all duration-300 z-20">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-        <div className="flex items-center gap-3 mb-4 relative z-10">
-          <div className="bg-white/20 dark:bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/20 dark:border-white/10 shadow-inner">
-            <BookOpen className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-4 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 dark:bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/20 dark:border-white/10 shadow-inner">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-white tracking-wide">
+              {hasActiveFilters ? "Total (Filtrat)" : "Total General"}
+            </h2>
           </div>
-          <h2 className="text-lg font-bold text-white tracking-wide">
-            {hasActiveFilters ? "Total (Filtrat)" : "Total General"}
-          </h2>
+          <button
+            onClick={() => setShowReportModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-xs font-bold border border-white/30 shadow-sm transition-all active:scale-95 text-white"
+            title="Deschide Foaia Oficială de Pontaj (PDF / Excel)"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Raport Pontaj</span>
+          </button>
         </div>
 
         <div className="text-center p-2 relative z-10">
@@ -413,7 +476,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       <div className="bg-white dark:bg-[#132337]/85 backdrop-blur-xl border border-gray-100 dark:border-white/10 p-6 rounded-[28px] shadow-md dark:shadow-black/40 mx-2 transition-all duration-300 relative overflow-hidden z-10">
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mb-6 relative z-10">
+        <div className="flex items-center justify-between mb-4 relative z-10">
           <button
             onClick={handlePrevMonth}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition-all text-gray-700 dark:text-white"
@@ -430,6 +493,17 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition-all text-gray-700 dark:text-white"
           >
             <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Buton Raport Oficial Luna Curentă */}
+        <div className="mb-5 relative z-10">
+          <button
+            onClick={() => setShowReportModal(true)}
+            className="w-full py-2.5 px-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200/60 dark:border-sky-850/50 text-sky-700 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-2 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-all shadow-xs active:scale-[0.99]"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+            <span>Foaie Oficială Pontaj {getMonthName(currentMonth)} (PDF / Excel)</span>
           </button>
         </div>
 
@@ -456,11 +530,18 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               const dateKey = getDateKey(date);
               const hasData = sessionsByDate.has(dateKey);
               const isHoliday = settings.legalHolidays?.includes(dateKey);
+              const specialDay = specialDaysMap.get(dateKey);
 
               let dayClasses = "text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"; // Default
 
               if (hasData) {
                 dayClasses = "bg-[#FF3B30] text-white shadow-md shadow-red-500/20 border border-red-500/50 relative overflow-hidden";
+              } else if (specialDay?.type === 'CO') {
+                dayClasses = "bg-emerald-600 text-white shadow-md shadow-emerald-600/30 border border-emerald-400/80 font-black";
+              } else if (specialDay?.type === 'CM') {
+                dayClasses = "bg-amber-600 text-white shadow-md shadow-amber-600/30 border border-amber-400/80 font-black";
+              } else if (specialDay?.type === 'RECUPERARE') {
+                dayClasses = "bg-sky-600 text-white shadow-md shadow-sky-600/30 border border-sky-400/80 font-black";
               } else if (isSelected) {
                 dayClasses = "bg-[#2ECC71] text-white shadow-md shadow-emerald-500/20 scale-105 rounded-xl ring-2 ring-emerald-400/40";
               } else if (isToday) {
@@ -477,11 +558,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                       relative h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200
                       ${dayClasses}
                   `}
-                  title={isHoliday ? "Sărbătoare Legală în România 🇷🇴" : undefined}
+                  title={specialDay ? `${specialDay.type}: ${dateKey}` : isHoliday ? "Sărbătoare Legală în România 🇷🇴" : undefined}
                 >
                   <span className="relative z-10">{date.getDate()}</span>
                   {hasData && (
                     <div className="w-1.5 h-1.5 bg-white rounded-full absolute bottom-1.5 shadow-sm"></div>
+                  )}
+                  {specialDay && !hasData && (
+                    <span className="text-[7px] font-black absolute top-0.5 left-1 tracking-tighter opacity-90 uppercase">
+                      {specialDay.type}
+                    </span>
                   )}
                   {isHoliday && (
                     <>
@@ -506,13 +592,26 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] overflow-hidden animate-slide-up shadow-md dark:shadow-black/40 backdrop-blur-xl mx-2 mt-4 p-5 relative z-20">
           <div className="border-b border-gray-100 dark:border-white/10 pb-4 flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
-                {selectedDate.toLocaleDateString("ro-RO", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+                  {selectedDate.toLocaleDateString("ro-RO", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </h3>
+                {selectedSpecialDay && (
+                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                    selectedSpecialDay.type === 'CO'
+                      ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                      : selectedSpecialDay.type === 'CM'
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+                      : 'bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
+                  }`}>
+                    {selectedSpecialDay.type === 'CO' ? '🏖️ Concediu Odihnă' : selectedSpecialDay.type === 'CM' ? '🏥 Concediu Medical' : '🔄 Recuperare'}
+                  </span>
+                )}
+              </div>
             </div>
             {selectedDaySummary && (
               <div className="text-right">
@@ -524,8 +623,83 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             )}
           </div>
 
-          <div className="pt-4">
-            {/* Add Session Button */}
+          <div className="pt-4 space-y-4">
+            {/* 1. SECȚIUNE MARCARE ZI SPECIALĂ: CO, CM, REC */}
+            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
+              <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
+                Marchează Ziua în Pontaj:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleToggleSpecialDay('CO')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                    selectedSpecialDay?.type === 'CO'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                      : 'bg-white dark:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                  }`}
+                >
+                  <span>🏖️</span>
+                  <span>Concediu Odihnă (CO)</span>
+                  {selectedSpecialDay?.type === 'CO' && <Check size={14} />}
+                </button>
+
+                <button
+                  onClick={() => handleToggleSpecialDay('CM')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                    selectedSpecialDay?.type === 'CM'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                      : 'bg-white dark:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                  }`}
+                >
+                  <span>🏥</span>
+                  <span>Concediu Medical (CM)</span>
+                  {selectedSpecialDay?.type === 'CM' && <Check size={14} />}
+                </button>
+
+                <button
+                  onClick={() => handleToggleSpecialDay('RECUPERARE')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                    selectedSpecialDay?.type === 'RECUPERARE'
+                      ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                      : 'bg-white dark:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 hover:bg-sky-50 dark:hover:bg-sky-950/40'
+                  }`}
+                >
+                  <span>🔄</span>
+                  <span>Recuperare</span>
+                  {selectedSpecialDay?.type === 'RECUPERARE' && <Check size={14} />}
+                </button>
+              </div>
+            </div>
+
+            {/* 2. SECȚIUNE PRESETĂRI RAPIDE DE TURE (1-CLICK) */}
+            <div className="p-3 bg-sky-50/60 dark:bg-sky-950/20 rounded-2xl border border-sky-100 dark:border-sky-900/30">
+              <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                <Zap size={14} className="text-sky-500" />
+                <span>Adaugă Tură Rapidă (1-Click):</span>
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {SHIFT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleApplyPreset(preset)}
+                    className="p-2.5 rounded-xl bg-white dark:bg-white/10 border border-sky-100 dark:border-white/10 hover:border-sky-400 text-left transition-all active:scale-95 shadow-xs group"
+                    title={preset.description}
+                  >
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-base">{preset.icon}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400">
+                        {preset.shortName}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block font-mono">
+                      {String(preset.startHour).padStart(2, '0')}:{String(preset.startMinute).padStart(2, '0')} - {String(preset.endHour).padStart(2, '0')}:{String(preset.endMinute).padStart(2, '0')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. BUTON ADĂUGARE MANUALĂ CU ORE PERSONALIZATE */}
             <button
               onClick={() => {
                 setEditingSessionId(null);
@@ -536,10 +710,10 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 setEndMinute("00");
                 setShowAddModal(true);
               }}
-              className="w-full mb-5 py-3 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-2xl shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-2xl shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              Adaugă Sesiune Manual
+              <span>Adaugă Sesiune Manual (Ore Personalizate)</span>
             </button>
             {selectedDaySummary ? (
               <div className="space-y-4">
@@ -672,9 +846,33 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 </button>
               </div>
 
-              <p className="text-sm text-gray-600 dark:text-white/80 mb-6 font-medium bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/10 text-center">
+              <p className="text-sm text-gray-600 dark:text-white/80 mb-4 font-medium bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/10 text-center">
                 📅 {selectedDate?.toLocaleDateString("ro-RO", { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
+
+              {/* Preseturi rapide în modal */}
+              <div className="mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1.5">
+                  Alege Presetare Orară:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {SHIFT_PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setStartHour(String(p.startHour).padStart(2, '0'));
+                        setStartMinute(String(p.startMinute).padStart(2, '0'));
+                        setEndHour(String(p.endHour).padStart(2, '0'));
+                        setEndMinute(String(p.endMinute).padStart(2, '0'));
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-[11px] font-bold text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-all active:scale-95"
+                    >
+                      {p.icon} {p.shortName}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="space-y-4">
                 {/* Start Time Selector */}
@@ -773,6 +971,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             </div>
           </div>
         )}
-    </div >
+
+      {/* 5. MODAL RAPORT PONTAJ LUNAR (PDF / EXCEL) */}
+      <MonthlyReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        sessions={workSessions}
+        year={currentMonth.getFullYear()}
+        month={currentMonth.getMonth()}
+        settings={settings}
+      />
+    </div>
   );
 };

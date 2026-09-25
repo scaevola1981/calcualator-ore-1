@@ -145,8 +145,109 @@ export const notifyZoneExit = async (userName: string, startTime?: Date) => {
 export const cancelAllNotifications = async () => {
     if (Capacitor.getPlatform() === 'web') return;
     try {
-        await LocalNotifications.cancel({ notifications: [{ id: 1 }, { id: 2 }] });
+        await LocalNotifications.cancel({ notifications: [{ id: 1 }, { id: 2 }, { id: 10 }, { id: 11 }] });
     } catch (error) {
         console.error('[Notificări] Eroare la anulare notificări:', error);
     }
 };
+
+let webTimer8h: ReturnType<typeof setTimeout> | null = null;
+let webTimer12h: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Programare Alerte Inteligente la 8 ore și 12 ore
+ */
+export const scheduleShiftAlerts = async (userName: string, startTime: Date) => {
+    const now = Date.now();
+    const startMs = new Date(startTime).getTime();
+    const alert8hTime = new Date(startMs + 8 * 60 * 60 * 1000);
+    const alert12hTime = new Date(startMs + 12 * 60 * 60 * 1000);
+
+    // Capacitor Native (Android / iOS)
+    if (Capacitor.getPlatform() !== 'web') {
+        try {
+            const notificationsToSchedule = [];
+
+            if (alert8hTime.getTime() > now) {
+                notificationsToSchedule.push({
+                    id: 10,
+                    title: '⏱️ Norma de 8 Ore A Fost Atinsă!',
+                    body: `Salut, ${userName}! Ai terminat norma de 8 ore. De acum începe contorizarea orelor suplimentare (cu pauza de 30m scăzută).`,
+                    schedule: { at: alert8hTime },
+                    channelId: 'pontaj_entry',
+                    smallIcon: 'ic_launcher',
+                    largeIcon: 'ic_launcher',
+                    iconColor: '#007AFF',
+                });
+            }
+
+            if (alert12hTime.getTime() > now) {
+                notificationsToSchedule.push({
+                    id: 11,
+                    title: '⚠️ Verificare: 12 Ore Lucrate!',
+                    body: `Atenție, ${userName}! Pontajul rulează de 12 ore. Nu uita să oprești pontajul dacă ai terminat programul de lucru!`,
+                    schedule: { at: alert12hTime },
+                    channelId: 'pontaj_exit',
+                    smallIcon: 'ic_launcher',
+                    largeIcon: 'ic_launcher',
+                    iconColor: '#FF9500',
+                });
+            }
+
+            if (notificationsToSchedule.length > 0) {
+                await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+                console.log('[Notificări] Alerte inteligente 8h/12h programate pe telefon');
+            }
+        } catch (error) {
+            console.error('[Notificări] Eroare la programarea alertelor de tură:', error);
+        }
+    } else {
+        // Web / Browser support
+        cancelShiftAlerts();
+        const msUntil8h = alert8hTime.getTime() - now;
+        if (msUntil8h > 0) {
+            webTimer8h = setTimeout(() => {
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification('⏱️ Norma de 8 Ore A Fost Atinsă!', {
+                        body: `Salut, ${userName}! Ai terminat norma de 8 ore. Orele suplimentare sunt contorizate automat.`,
+                    });
+                }
+            }, msUntil8h);
+        }
+
+        const msUntil12h = alert12hTime.getTime() - now;
+        if (msUntil12h > 0) {
+            webTimer12h = setTimeout(() => {
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification('⚠️ Verificare: 12 Ore Lucrate!', {
+                        body: `Atenție, ${userName}! Pontajul rulează de 12 ore. Ai oprit pontajul?`,
+                    });
+                }
+            }, msUntil12h);
+        }
+    }
+};
+
+/**
+ * Anulare Alerte Inteligente la oprirea pontajului
+ */
+export const cancelShiftAlerts = async () => {
+    if (webTimer8h) {
+        clearTimeout(webTimer8h);
+        webTimer8h = null;
+    }
+    if (webTimer12h) {
+        clearTimeout(webTimer12h);
+        webTimer12h = null;
+    }
+
+    if (Capacitor.getPlatform() !== 'web') {
+        try {
+            await LocalNotifications.cancel({ notifications: [{ id: 10 }, { id: 11 }] });
+            console.log('[Notificări] Alerte inteligente de tură anulate');
+        } catch (err) {
+            console.warn('[Notificări] Eroare la anularea alertelor de tură:', err);
+        }
+    }
+};
+

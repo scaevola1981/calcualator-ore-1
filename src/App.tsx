@@ -7,10 +7,6 @@ import {
   Calculator,
   Zap, // Lightning icon for Overtime
   Square,
-  MapPin,
-  Radio,
-  CheckCircle2,
-  AlertCircle,
   RotateCw
 } from "lucide-react";
 import { ChartCard } from "./components/ChartCard";
@@ -26,8 +22,8 @@ import {
 } from "./utils/timeRounding";
 import { getLocalISODate } from './utils/dateUtils';
 import { LEGAL_HOLIDAYS } from './utils/holidays';
-import { useGeofencing } from './hooks/useGeofencing';
-import { initializeNotifications, notifyZoneEntry, notifyZoneExit } from './services/notifications';
+import { initializeNotifications, scheduleShiftAlerts, cancelShiftAlerts } from './services/notifications';
+import { SHIFT_PRESETS, createSessionFromPreset } from './utils/shiftPresets';
 import { Preferences } from '@capacitor/preferences';
 
 const STORAGE_KEYS = {
@@ -60,12 +56,14 @@ const App: React.FC = () => {
     overtimeMultiplier: 1,
     theme: 'light',
     legalHolidays: LEGAL_HOLIDAYS,
-    userName: 'Florin',
+    userName: 'Dorobanțu Nicolae-Florin',
+    employeeId: 'AFD1270',
+    companyName: 'AVICARVIL FOOD & DISTRIBUTION',
+    department: 'Întreținere și mentenanță',
+    jobTitle: 'Lăcătuș mecanic',
     standardAdvance: 1500,
     mealTicketValue: 22,
     sporRegieFixed: 71.80,
-    geofencingEnabled: false,
-    geofenceRadius: 400,
   });
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -92,12 +90,21 @@ const App: React.FC = () => {
 
         // 2. Load State
         const { value: isWorkingVal } = await Preferences.get({ key: STORAGE_KEYS.IS_WORKING });
-        if (isWorkingVal) setIsWorking(JSON.parse(isWorkingVal));
-
         const { value: startTimeVal } = await Preferences.get({ key: STORAGE_KEYS.START_TIME });
-        if (startTimeVal && JSON.parse(startTimeVal) !== null) setStartTime(new Date(JSON.parse(startTimeVal)));
+        let loadedStart: Date | null = null;
+        if (startTimeVal && JSON.parse(startTimeVal) !== null) {
+          loadedStart = new Date(JSON.parse(startTimeVal));
+          setStartTime(loadedStart);
+        }
+        if (isWorkingVal) {
+          const working = JSON.parse(isWorkingVal);
+          setIsWorking(working);
+          if (working && loadedStart) {
+            scheduleShiftAlerts(settings.userName || 'Dorobanțu Nicolae-Florin', loadedStart);
+          }
+        }
 
-        // 3. Load Sessions
+        // 3. Load Sessions (Preserve complete history for reporting & backups)
         const { value: sessionsVal } = await Preferences.get({ key: STORAGE_KEYS.WORK_SESSIONS });
         if (sessionsVal) {
           const sessions = JSON.parse(sessionsVal).map((s: any) => ({
@@ -106,10 +113,7 @@ const App: React.FC = () => {
             endTime: new Date(s.endTime),
             modeFlag: s.modeFlag ?? false,
           }));
-          // Filter last 3 months
-          const cutoffDate = new Date();
-          cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-          setWorkSessions(sessions.filter((s: WorkSession) => new Date(s.startTime) >= cutoffDate));
+          setWorkSessions(sessions);
         }
 
         // 4. Initialize Notifications ONCE (P3)
@@ -175,77 +179,7 @@ const App: React.FC = () => {
     settingsRef.current = settings;
   }, [isWorking, startTime, settings]);
 
-  const [gpsToast, setGpsToast] = useState<{ title: string; message: string; type: 'entry' | 'exit' } | null>(null);
 
-  // --- GEOFENCING ---
-  const geofenceConfig = useMemo(() => ({
-    latitude: settings.gateLatitude || 0,
-    longitude: settings.gateLongitude || 0,
-    radius: settings.geofenceRadius || 400,
-    enabled: !isLoading && (settings.geofencingEnabled || false),
-  }), [isLoading, settings.gateLatitude, settings.gateLongitude, settings.geofenceRadius, settings.geofencingEnabled]);
-
-  const handleZoneEntry = useCallback(() => {
-    // If loading storage from device, ignore to prevent race conditions
-    if (isLoadingRef.current) return;
-    if (!settingsRef.current.geofencingEnabled) return;
-
-    // If already working, do nothing
-    if (isWorkingRef.current) return;
-
-    // CRITICAL: If an active startTime already exists (e.g. from storage/session), NEVER overwrite it!
-    if (startTimeRef.current) {
-      console.log('[Agent ZONA GPS] Sesiunea era deja activă de la:', startTimeRef.current);
-      setIsWorking(true);
-      return;
-    }
-
-    const now = new Date();
-    const roundedStart = roundEntryTime(now);
-    setIsWorking(true);
-    setStartTime(roundedStart);
-    notifyZoneEntry(settingsRef.current.userName || 'Florin');
-    setGpsToast({
-      type: 'entry',
-      title: '🟢 Punct de Lucru Detectat',
-      message: 'Ai intrat în raza de lucru! Pontajul a pornit automat. Spor la muncă!',
-    });
-    setTimeout(() => setGpsToast(null), 6000);
-  }, []);
-
-  const handleZoneExit = useCallback(() => {
-    if (isLoadingRef.current) return;
-    if (!settingsRef.current.geofencingEnabled) return;
-
-    // Auto-Stop logic when leaving work area
-    if (isWorkingRef.current && startTimeRef.current) {
-      const now = new Date();
-      const roundedEnd = roundExitTime(now);
-      const sTime = startTimeRef.current;
-      const newSession: WorkSession = {
-        id: `${new Date(sTime).getTime()}-${Math.random().toString(36).substring(2, 9)}`,
-        startTime: sTime,
-        endTime: roundedEnd,
-        modeFlag: settingsRef.current.hasNoLimit,
-      };
-      setWorkSessions(prev => [...prev, newSession]);
-      setIsWorking(false);
-      setStartTime(null);
-      notifyZoneExit(settingsRef.current.userName || 'Florin', sTime);
-      setGpsToast({
-        type: 'exit',
-        title: '🔴 Ieșire din Zonă de Lucru',
-        message: 'Ai ieșit din raza de lucru! Pontajul a fost oprit și sesiunea a fost salvată.',
-      });
-      setTimeout(() => setGpsToast(null), 6000);
-    }
-  }, []);
-
-  const geofenceState = useGeofencing(
-    geofenceConfig,
-    handleZoneEntry,
-    handleZoneExit
-  );
 
   // --- HANDLERS ---
   const handleStartStop = () => {
@@ -256,6 +190,9 @@ const App: React.FC = () => {
       const roundedStart = roundEntryTime(now); // Apply rounding
       setIsWorking(true);
       setStartTime(roundedStart);
+      if (settings.smartAlertsEnabled ?? true) {
+        scheduleShiftAlerts(settings.userName || 'Dorobanțu Nicolae-Florin', roundedStart);
+      }
     }
   };
 
@@ -271,6 +208,7 @@ const App: React.FC = () => {
         modeFlag: settings.hasNoLimit,
       };
 
+      cancelShiftAlerts();
       setWorkSessions((prev) => [...prev, newSession]);
       setStartTime(null);
       setIsWorking(false);
@@ -529,24 +467,7 @@ const App: React.FC = () => {
 
         <div className="relative z-10 flex flex-col h-full min-h-screen">
 
-          {/* FLOATING GPS TOAST NOTIFICATION */}
-          {gpsToast && (
-            <div className="fixed top-5 left-4 right-4 z-50 flex justify-center pointer-events-none animate-slide-down">
-              <div className={`max-w-[400px] w-full p-4 rounded-2xl shadow-2xl backdrop-blur-xl border pointer-events-auto flex items-start gap-3 ${
-                gpsToast.type === 'entry'
-                  ? 'bg-emerald-900/90 border-emerald-400/40 text-white'
-                  : 'bg-red-900/90 border-red-400/40 text-white'
-              }`}>
-                <div className="p-2 rounded-xl bg-white/20 flex-shrink-0 mt-0.5">
-                  {gpsToast.type === 'entry' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-sm tracking-tight">{gpsToast.title}</h4>
-                  <p className="text-xs text-white/90 mt-0.5">{gpsToast.message}</p>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-1 relative">
@@ -580,62 +501,7 @@ const App: React.FC = () => {
 
                 {/* Content Container with ample bottom padding for floating controls */}
                 <div className="px-5 pt-5 pb-44 space-y-4">
-                  {/* GPS Automation Live Banner */}
-                  {settings.geofencingEnabled && settings.gateLatitude && (
-                    <div className={`p-4 rounded-[24px] border backdrop-blur-md shadow-md transition-all duration-300 ${
-                      geofenceState.isInZone
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100 shadow-emerald-500/10'
-                        : geofenceState.error
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-100 shadow-amber-500/10'
-                        : 'bg-white/80 dark:bg-[#132337]/80 border-gray-200/80 dark:border-white/10 text-gray-800 dark:text-gray-200'
-                    }`}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`p-2.5 rounded-2xl flex-shrink-0 ${
-                            geofenceState.isInZone
-                              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30 animate-pulse'
-                              : geofenceState.error
-                              ? 'bg-amber-500 text-white'
-                              : 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                          }`}>
-                            {geofenceState.isInZone ? <Radio size={18} /> : <MapPin size={18} />}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-black uppercase tracking-wider">
-                                {geofenceState.isInZone
-                                  ? 'În Punctul de Lucru'
-                                  : geofenceState.error
-                                  ? 'Atenție GPS'
-                                  : 'Automatizare GPS Activă'}
-                              </span>
-                              {geofenceState.isInZone && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white">
-                                  LIVE
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs opacity-80 truncate mt-0.5 font-medium">
-                              {geofenceState.isInZone
-                                ? `Distanță: ${geofenceState.currentDistance ?? 0}m • Pontaj pornit automat`
-                                : geofenceState.error
-                                ? geofenceState.error
-                                : geofenceState.currentDistance !== null
-                                ? `Distanță: ${geofenceState.currentDistance > 1000 ? `${(geofenceState.currentDistance / 1000).toFixed(1)} km` : `${geofenceState.currentDistance} m`} • Pornește automat la sosire`
-                                : 'Se determină poziția GPS...'}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => geofenceState.refreshPosition()}
-                          title="Actualizează GPS"
-                          className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-[11px] font-bold transition-all flex-shrink-0"
-                        >
-                          Reîmprospătează
-                        </button>
-                      </div>
-                    </div>
-                  )}
+
 
                   {/* ROW 1: Monthly Stats (Normal & Overtime) */}
                   <div className="grid grid-cols-2 gap-3.5">
@@ -695,6 +561,41 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Quick Shift Presets on Home */}
+                  <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[24px] p-4 shadow-sm backdrop-blur-xl">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <Zap size={15} className="text-amber-500" />
+                        <span>Înregistrează rapid tura de azi:</span>
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-medium">1-Click</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {SHIFT_PRESETS.slice(0, 4).map((preset) => (
+                        <button
+                          key={preset.id}
+                          onClick={() => {
+                            const newSession = createSessionFromPreset(preset, new Date());
+                            handleManualAddSession(newSession);
+                            addNotification(`Tura "${preset.shortName}" a fost salvată cu succes!`);
+                          }}
+                          className="py-2 px-2.5 rounded-xl bg-gray-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-gray-200/80 dark:border-white/10 hover:border-sky-400 text-left transition-all active:scale-95 shadow-2xs group"
+                          title={preset.description}
+                        >
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm">{preset.icon}</span>
+                            <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 truncate">
+                              {preset.shortName}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-gray-400 font-mono block mt-0.5">
+                            {String(preset.startHour).padStart(2, '0')}:{String(preset.startMinute).padStart(2, '0')} - {String(preset.endHour).padStart(2, '0')}:{String(preset.endMinute).padStart(2, '0')}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* ROW 3: Chart Card */}
                   <ChartCard
                     title={currentWeekInfo.title}
@@ -738,7 +639,8 @@ const App: React.FC = () => {
               <SettingsPage
                 settings={settings}
                 onSettingsChange={setSettings}
-                geofenceState={geofenceState}
+                workSessions={workSessions}
+                onSessionsChange={setWorkSessions}
               />
             )}
           </main>
