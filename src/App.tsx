@@ -502,7 +502,7 @@ const App: React.FC = () => {
                 </header>
 
                 {/* Content Container with ample bottom padding for floating controls */}
-                <div className="px-5 pt-5 pb-44 space-y-4">
+                <div className="px-5 pt-5 pb-52 space-y-4">
 
 
                   {/* ROW 1: Monthly Stats (Normal & Overtime) */}
@@ -713,7 +713,7 @@ const App: React.FC = () => {
 
           {/* START/STOP BUTTON (STICKY) */}
           {page === 'home' && (
-            <div className="fixed bottom-[88px] left-0 right-0 z-40 flex justify-center w-full px-4 pointer-events-none">
+            <div className="fixed start-btn-safe left-0 right-0 z-40 flex justify-center w-full px-4 pointer-events-none">
               <div className="max-w-[420px] w-full flex justify-center pointer-events-auto">
                 <button
                   onClick={handleStartStop}

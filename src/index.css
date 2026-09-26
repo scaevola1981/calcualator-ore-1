@@ -46,6 +46,10 @@
   padding-bottom: max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.6rem)) !important;
 }
 
+.start-btn-safe {
+  bottom: calc(max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.6rem)) + 4rem + 1.25rem) !important;
+}
+
 .dark {
   --bg-opp: #0D1B2A;
   /* Dark navy background */
