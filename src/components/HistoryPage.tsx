@@ -21,6 +21,7 @@ import {
 } from "../utils/timeRounding";
 import { getLocalISODate } from '../utils/dateUtils';
 import { MonthlyReportModal } from "./MonthlyReportModal";
+import { Shift2Modal } from "./Shift2Modal";
 import { SHIFT_PRESETS, createSessionFromPreset, ShiftPreset } from "../utils/shiftPresets";
 
 interface HistoryPageProps {
@@ -85,6 +86,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   // Manual Entry / Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showShift2Modal, setShowShift2Modal] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | number | null>(null);
   const [startHour, setStartHour] = useState("06");
   const [startMinute, setStartMinute] = useState("30");
@@ -671,31 +673,73 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               </div>
             </div>
 
-            {/* 2. SECȚIUNE PRESETĂRI RAPIDE DE TURE (1-CLICK) */}
-            <div className="p-3 bg-sky-50/60 dark:bg-sky-950/20 rounded-2xl border border-sky-100 dark:border-sky-900/30">
-              <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
-                <Zap size={14} className="text-sky-500" />
-                <span>Adaugă Tură Rapidă (1-Click):</span>
+            {/* 2. SECȚIUNE SCHIMBURI: SCHIMBUL 1 & SCHIMBUL 2 */}
+            <div className="p-3 bg-gradient-to-br from-indigo-50/60 to-purple-50/40 dark:from-indigo-950/20 dark:to-purple-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+              <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider block mb-2.5 flex items-center gap-1.5">
+                <Zap size={14} className="text-amber-500" />
+                <span>Înregistrează Tură pentru această zi:</span>
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SHIFT_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    onClick={() => handleApplyPreset(preset)}
-                    className="p-2.5 rounded-xl bg-white dark:bg-white/10 border border-sky-100 dark:border-white/10 hover:border-sky-400 text-left transition-all active:scale-95 shadow-xs group"
-                    title={preset.description}
-                  >
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-base">{preset.icon}</span>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400">
-                        {preset.shortName}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block font-mono">
-                      {String(preset.startHour).padStart(2, '0')}:{String(preset.startMinute).padStart(2, '0')} - {String(preset.endHour).padStart(2, '0')}:{String(preset.endMinute).padStart(2, '0')}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* SCHIMBUL 1 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedDate) {
+                      const s1 = SHIFT_PRESETS[0];
+                      handleApplyPreset(s1);
+                    }
+                  }}
+                  className="p-3 rounded-xl bg-white dark:bg-white/10 border border-amber-200 dark:border-amber-700/40 hover:border-amber-400 text-left transition-all active:scale-95 shadow-xs group"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-base">🌅</span>
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                      1-Click
                     </span>
-                  </button>
-                ))}
+                  </div>
+                  <span className="text-xs font-black text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 block">
+                    Schimbul 1 (06:30 – 16:30)
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">
+                    8h normă + 1.5h suplimentare
+                  </span>
+                </button>
+
+                {/* SCHIMBUL 2 */}
+                <button
+                  type="button"
+                  onClick={() => setShowShift2Modal(true)}
+                  className="p-3 rounded-xl bg-white dark:bg-white/10 border border-indigo-200 dark:border-indigo-700/40 hover:border-indigo-400 text-left transition-all active:scale-95 shadow-xs group"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-base">🌙</span>
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                      Flexibil
+                    </span>
+                  </div>
+                  <span className="text-xs font-black text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 block">
+                    Schimbul 2 (16:30 ➔ plecare)
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">
+                    Alege ora când ai plecat ➜
+                  </span>
+                </button>
+              </div>
+
+              {/* Opțiune Sch. 1 scurt */}
+              <div className="mt-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedDate) {
+                      const s1Scurt = SHIFT_PRESETS[1];
+                      handleApplyPreset(s1Scurt);
+                    }
+                  }}
+                  className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:underline"
+                >
+                  ☀️ Schimbul 1 fără suplimentare (06:30 – 15:00)
+                </button>
               </div>
             </div>
 
@@ -853,24 +897,60 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               {/* Preseturi rapide în modal */}
               <div className="mb-4">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1.5">
-                  Alege Presetare Orară:
+                  Alege Presetare Orară Rapidă:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {SHIFT_PRESETS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setStartHour(String(p.startHour).padStart(2, '0'));
-                        setStartMinute(String(p.startMinute).padStart(2, '0'));
-                        setEndHour(String(p.endHour).padStart(2, '0'));
-                        setEndMinute(String(p.endMinute).padStart(2, '0'));
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-[11px] font-bold text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-all active:scale-95"
-                    >
-                      {p.icon} {p.shortName}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartHour("06");
+                      setStartMinute("30");
+                      setEndHour("16");
+                      setEndMinute("30");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-[11px] font-bold text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 transition-all active:scale-95"
+                  >
+                    🌅 Sch. 1 (06:30 - 16:30)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartHour("06");
+                      setStartMinute("30");
+                      setEndHour("15");
+                      setEndMinute("00");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-[11px] font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 transition-all active:scale-95"
+                  >
+                    ☀️ Sch. 1 scurt (06:30 - 15:00)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartHour("16");
+                      setStartMinute("30");
+                      setEndHour("02");
+                      setEndMinute("00");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-[11px] font-bold text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 transition-all active:scale-95"
+                  >
+                    🌙 Sch. 2 (16:30 - 02:00)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStartHour("16");
+                      setStartMinute("30");
+                      setEndHour("01");
+                      setEndMinute("00");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-[11px] font-bold text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 transition-all active:scale-95"
+                  >
+                    🌙 Sch. 2 (16:30 - 01:00)
+                  </button>
                 </div>
               </div>
 
@@ -980,6 +1060,17 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         year={currentMonth.getFullYear()}
         month={currentMonth.getMonth()}
         settings={settings}
+      />
+
+      {/* 6. MODAL SPECIAL SCHIMBUL 2 PENTRU ZIUA SELECTATĂ */}
+      <Shift2Modal
+        isOpen={showShift2Modal}
+        onClose={() => setShowShift2Modal(false)}
+        targetDate={selectedDate || new Date()}
+        onSaveSession={(newSession) => {
+          onAddSession(newSession);
+        }}
+        isToday={areDatesEqual(selectedDate, new Date())}
       />
     </div>
   );

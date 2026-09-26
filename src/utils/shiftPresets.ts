@@ -13,71 +13,59 @@ export interface ShiftPreset {
   isOvernight?: boolean;
 }
 
+/**
+ * Schimburile reale din fabrica lui Florin:
+ * - Schimbul 1: 06:30 - 16:30 (10 ore: 8h normă + 1.5h suplimentare după deducere 30m pauză)
+ * - Schimbul 1 Scurt: 06:30 - 15:00 (8h normă fără suplimentare)
+ */
 export const SHIFT_PRESETS: ShiftPreset[] = [
   {
-    id: 'schimbul_1',
-    name: 'Schimbul 1 (06:30 - 15:00)',
-    shortName: 'Sch. 1 (8h)',
+    id: 'schimbul_1_complet',
+    name: 'Schimbul 1 (06:30 - 16:30)',
+    shortName: 'Schimbul 1',
     icon: '🌅',
-    description: 'Program standard de zi: 8 ore normă (06:30 - 15:00)',
+    description: 'Program standard Schimbul 1: 06:30 – 16:30 (8h normă + 1.5h suplimentare)',
+    startHour: 6,
+    startMinute: 30,
+    endHour: 16,
+    endMinute: 30,
+    isOvernight: false,
+  },
+  {
+    id: 'schimbul_1_scurt',
+    name: 'Schimbul 1 Scurt (06:30 - 15:00)',
+    shortName: 'Sch. 1 (8h)',
+    icon: '☀️',
+    description: 'Zi fără suplimentare: 06:30 – 15:00 (8 ore normă de bază)',
     startHour: 6,
     startMinute: 30,
     endHour: 15,
     endMinute: 0,
     isOvernight: false,
   },
-  {
-    id: 'schimbul_1_suplimentare',
-    name: 'Schimbul 1 + 2h Suplim. (06:30 - 17:00)',
-    shortName: 'Sch. 1 + OS (10h)',
-    icon: '⚡',
-    description: 'Zi prelungită: 8h normă + 2h suplimentare (pauză 30m inclusă)',
-    startHour: 6,
-    startMinute: 30,
-    endHour: 17,
-    endMinute: 0,
-    isOvernight: false,
-  },
-  {
-    id: 'schimbul_2',
-    name: 'Schimbul 2 (14:30 - 23:00)',
-    shortName: 'Sch. 2 (După-amiază)',
-    icon: '🌇',
-    description: 'Schimbul de după-amiază cu 1h spor noapte (după 22:00)',
-    startHour: 14,
-    startMinute: 30,
-    endHour: 23,
-    endMinute: 0,
-    isOvernight: false,
-  },
-  {
-    id: 'schimbul_3',
-    name: 'Schimbul 3 - Noapte (22:30 - 07:00)',
-    shortName: 'Sch. 3 (Noapte)',
-    icon: '🌙',
-    description: 'Tură integrală de noapte (+1 zi, 22:30 - 07:00)',
-    startHour: 22,
-    startMinute: 30,
-    endHour: 7,
-    endMinute: 0,
-    isOvernight: true,
-  },
-  {
-    id: 'tura_12h',
-    name: 'Tură 12h Zi (07:00 - 19:30)',
-    shortName: 'Tură 12h',
-    icon: '⏱️',
-    description: 'Program lung: 8h normă + 4h suplimentare (pauză dedusă)',
-    startHour: 7,
-    startMinute: 0,
-    endHour: 19,
-    endMinute: 30,
-    isOvernight: false,
-  },
 ];
 
 /**
- * Creates a WorkSession based on a preset for a given target Date
+ * Ore frecvente de ieșire pentru Schimbul 2 (care începe mereu la 16:30)
+ */
+export interface Shift2ExitOption {
+  label: string;
+  endHour: number;
+  endMinute: number;
+  description: string;
+}
+
+export const SHIFT_2_COMMON_EXITS: Shift2ExitOption[] = [
+  { label: '01:00', endHour: 1, endMinute: 0, description: '8.5h brut (8h normă + 3h noapte)' },
+  { label: '01:30', endHour: 1, endMinute: 30, description: '9.0h brut (8h normă + 0.5h supl. + 3.5h noapte)' },
+  { label: '02:00', endHour: 2, endMinute: 0, description: '9.5h brut (8h normă + 1.0h supl. + 4h noapte)' },
+  { label: '02:30', endHour: 2, endMinute: 30, description: '10.0h brut (8h normă + 1.5h supl. + 4.5h noapte)' },
+  { label: '03:00', endHour: 3, endMinute: 0, description: '10.5h brut (8h normă + 2.0h supl. + 5h noapte)' },
+  { label: '03:30', endHour: 3, endMinute: 30, description: '11.0h brut (8h normă + 2.5h supl. + 5.5h noapte)' },
+];
+
+/**
+ * Creează o sesiune de lucru din preset pe o anumită dată
  */
 export const createSessionFromPreset = (preset: ShiftPreset, targetDate: Date): WorkSession => {
   const start = new Date(targetDate);
@@ -88,6 +76,30 @@ export const createSessionFromPreset = (preset: ShiftPreset, targetDate: Date): 
     end.setDate(end.getDate() + 1);
   }
   end.setHours(preset.endHour, preset.endMinute, 0, 0);
+
+  return {
+    startTime: start,
+    endTime: end,
+  };
+};
+
+/**
+ * Creează o sesiune pentru Schimbul 2 (Start fix 16:30, sfârșit flexibil noaptea în ziua următoare)
+ */
+export const createShift2Session = (
+  targetDate: Date,
+  endHour: number,
+  endMinute: number
+): WorkSession => {
+  const start = new Date(targetDate);
+  start.setHours(16, 30, 0, 0);
+
+  const end = new Date(targetDate);
+  // Dacă ora de sfârșit este mai mică de 16 (de ex: 01:00, 02:00), înseamnă că s-a terminat după miezul nopții (+1 zi)
+  if (endHour < 16) {
+    end.setDate(end.getDate() + 1);
+  }
+  end.setHours(endHour, endMinute, 0, 0);
 
   return {
     startTime: start,

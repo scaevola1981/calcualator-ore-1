@@ -13,6 +13,7 @@ import { ChartCard } from "./components/ChartCard";
 import { HistoryPage } from "./components/HistoryPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { CalculatorPage } from "./components/CalculatorPage";
+import { Shift2Modal } from "./components/Shift2Modal";
 import type { WorkSession, AppSettings } from "./types";
 import {
   splitHoursByDay,
@@ -69,6 +70,7 @@ const App: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weekOffset, setWeekOffset] = useState(0);
   const [showStopConfirmation, setShowStopConfirmation] = useState(false);
+  const [isShift2ModalOpen, setIsShift2ModalOpen] = useState(false);
 
   // --- STARTUP LOGIC (P2 & P3) ---
   useEffect(() => {
@@ -561,38 +563,102 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Quick Shift Presets on Home */}
-                  <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[24px] p-4 shadow-sm backdrop-blur-xl">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  {/* Schimburile Reale: Schimbul 1 (06:30-16:30) & Schimbul 2 (16:30 -> flexibil) */}
+                  <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] p-5 shadow-md dark:shadow-black/40 backdrop-blur-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 uppercase tracking-wider">
                         <Zap size={15} className="text-amber-500" />
-                        <span>Înregistrează rapid tura de azi:</span>
+                        <span>Înregistrează tura de azi:</span>
                       </span>
-                      <span className="text-[10px] text-gray-400 font-medium">1-Click</span>
+                      <span className="text-[10px] text-gray-400 font-semibold">2 Schimburi Fabrică</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {SHIFT_PRESETS.slice(0, 4).map((preset) => (
-                        <button
-                          key={preset.id}
-                          onClick={() => {
-                            const newSession = createSessionFromPreset(preset, new Date());
-                            handleManualAddSession(newSession);
-                            addNotification(`Tura "${preset.shortName}" a fost salvată cu succes!`);
-                          }}
-                          className="py-2 px-2.5 rounded-xl bg-gray-50 dark:bg-white/5 hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-gray-200/80 dark:border-white/10 hover:border-sky-400 text-left transition-all active:scale-95 shadow-2xs group"
-                          title={preset.description}
-                        >
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm">{preset.icon}</span>
-                            <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 truncate">
-                              {preset.shortName}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-mono block mt-0.5">
-                            {String(preset.startHour).padStart(2, '0')}:{String(preset.startMinute).padStart(2, '0')} - {String(preset.endHour).padStart(2, '0')}:{String(preset.endMinute).padStart(2, '0')}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* CARD SCHIMBUL 1 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s1 = SHIFT_PRESETS[0]; // Schimbul 1 (06:30 - 16:30)
+                          const newSession = createSessionFromPreset(s1, new Date());
+                          handleManualAddSession(newSession);
+                          addNotification("Schimbul 1 (06:30 – 16:30) înregistrat cu succes! (8h normă + 1.5h suplimentare)");
+                        }}
+                        className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/15 dark:from-amber-950/40 dark:to-orange-950/20 hover:from-amber-500/20 hover:to-orange-500/15 border border-amber-300/40 dark:border-amber-600/30 text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-xs"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-2xl">🌅</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                            1-Click Rapid
                           </span>
-                        </button>
-                      ))}
+                        </div>
+                        <h4 className="text-base font-black text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                          Schimbul 1
+                        </h4>
+                        <p className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                          06:30 – 16:30
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium leading-relaxed">
+                          8h normă + 1.5h suplim. (pauză 30m inclusă)
+                        </p>
+                      </button>
+
+                      {/* CARD SCHIMBUL 2 */}
+                      <button
+                        type="button"
+                        onClick={() => setIsShift2ModalOpen(true)}
+                        className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-indigo-500/15 dark:from-indigo-950/40 dark:to-purple-950/20 hover:from-indigo-500/20 hover:to-purple-500/15 border border-indigo-300/40 dark:border-indigo-600/30 text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-xs"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-2xl">🌙</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-300">
+                            Oră Flexibilă
+                          </span>
+                        </div>
+                        <h4 className="text-base font-black text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                          Schimbul 2
+                        </h4>
+                        <p className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                          16:30 ➔ plecare variabilă
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium leading-relaxed">
+                          Alege când ai plecat (01:00, 02:00 etc.) ➜
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Opțiuni suplimentare / pornire live Schimbul 2 */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const start1630 = new Date();
+                          start1630.setHours(16, 30, 0, 0);
+                          setIsWorking(true);
+                          setStartTime(start1630);
+                          if (settings.smartAlertsEnabled ?? true) {
+                            scheduleShiftAlerts(settings.userName || 'Dorobanțu Nicolae-Florin', start1630);
+                          }
+                          addNotification("Cronometru Schimbul 2 pornit live (start setat la 16:30)!");
+                        }}
+                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        <span>▶️</span>
+                        <span>Pornește Schimbul 2 live (de la 16:30)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s1Scurt = SHIFT_PRESETS[1]; // Schimbul 1 scurt 06:30 - 15:00
+                          const newSession = createSessionFromPreset(s1Scurt, new Date());
+                          handleManualAddSession(newSession);
+                          addNotification("Schimbul 1 scurt (06:30 – 15:00) înregistrat cu succes! (8h normă)");
+                        }}
+                        className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:underline flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        <span>☀️</span>
+                        <span>Sch. 1 scurt (06:30 - 15:00)</span>
+                      </button>
                     </div>
                   </div>
 
@@ -700,6 +766,28 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* MODAL SPECIAL PENTRU SCHIMBUL 2 */}
+          <Shift2Modal
+            isOpen={isShift2ModalOpen}
+            onClose={() => setIsShift2ModalOpen(false)}
+            targetDate={new Date()}
+            onSaveSession={(newSession) => {
+              handleManualAddSession(newSession);
+              addNotification("Schimbul 2 salvat cu succes în pontaj!");
+            }}
+            isToday={true}
+            onStartLiveTimerFrom1630={() => {
+              const start1630 = new Date();
+              start1630.setHours(16, 30, 0, 0);
+              setIsWorking(true);
+              setStartTime(start1630);
+              if (settings.smartAlertsEnabled ?? true) {
+                scheduleShiftAlerts(settings.userName || 'Dorobanțu Nicolae-Florin', start1630);
+              }
+              addNotification("Cronometru Schimbul 2 pornit live (start setat la 16:30)!");
+            }}
+          />
         </div>
       </div>
     </div>
