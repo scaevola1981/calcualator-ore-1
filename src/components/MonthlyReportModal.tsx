@@ -69,7 +69,7 @@ export const MonthlyReportModal: React.FC<MonthlyReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-2 sm:p-4 overflow-y-auto modal-safe-inset">
       {/* CONTAINER MODAL */}
       <div className="bg-white dark:bg-[#0F1E2E] w-full max-w-4xl rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden my-auto max-h-[95vh] flex flex-col animate-fade-in text-gray-900 dark:text-white">
         

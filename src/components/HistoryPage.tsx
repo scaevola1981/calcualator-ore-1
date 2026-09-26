@@ -434,7 +434,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   return (
     <div className="space-y-4 animate-fade-in pb-24">
       {/* HEADER */}
-      <header className="px-6 pt-12 pb-7 mb-4 relative header-gradient-bg rounded-b-[32px] shadow-lg -mx-4">
+      <header className="px-6 header-safe-top pb-7 mb-4 relative header-gradient-bg rounded-b-[32px] shadow-lg -mx-4">
         <h1 className="text-3xl font-black mb-1 tracking-tight text-white drop-shadow-sm">
           Istoric
         </h1>
@@ -498,16 +498,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           </button>
         </div>
 
-        {/* Buton Raport Oficial Luna Curentă */}
-        <div className="mb-5 relative z-10">
-          <button
-            onClick={() => setShowReportModal(true)}
-            className="w-full py-2.5 px-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200/60 dark:border-sky-850/50 text-sky-700 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-2 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-all shadow-xs active:scale-[0.99]"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-            <span>Foaie Oficială Pontaj {getMonthName(currentMonth)} (PDF / Excel)</span>
-          </button>
-        </div>
 
         {/* Grid */}
         <div className="relative z-10">
@@ -865,7 +855,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       {/* Manual Entry / Edit Modal */}
       {
         showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-safe-inset overflow-y-auto">
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-md"
               onClick={() => {

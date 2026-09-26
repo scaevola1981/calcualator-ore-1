@@ -476,7 +476,7 @@ const App: React.FC = () => {
             {page === "home" && (
               <div className="animate-fade-in">
                 {/* Header Info - Clean Gradient Banner */}
-                <header className="px-6 pt-12 pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
+                <header className="px-6 header-safe-top pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
                   <div className="flex justify-between items-start">
                     <div>
                       <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm">
@@ -738,7 +738,7 @@ const App: React.FC = () => {
           )}
 
           {/* BOTTOM NAVIGATION (Floating Dark Navy) */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-4 pb-3 pointer-events-none">
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-4 bottom-nav-safe pointer-events-none">
             <div className="max-w-[420px] w-full pointer-events-auto bg-[#0D1B2A]/95 dark:bg-[#08121E]/95 backdrop-blur-md rounded-[24px] shadow-2xl border border-white/10">
               <div className="flex items-center justify-around h-16 px-2">
                 <NavItem id="home" label="Acasă" icon={Home} />
@@ -751,7 +751,7 @@ const App: React.FC = () => {
 
           {/* CONFIRMATION MODAL */}
           {showStopConfirmation && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 modal-safe-inset bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl scale-100">
                 <h3 className="text-xl font-bold mb-2 text-center text-gray-900 dark:text-white">Oprești sesiunea?</h3>
                 <p className="text-center text-gray-500 mb-6">Ai lucrat {formatTime((new Date().getTime() - (startTime?.getTime() || 0)) / 3600000)}.</p>

@@ -26,6 +26,24 @@
   --card-bg: rgba(255, 255, 255, 0.9);
   /* Card background */
   --card-gradient: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+
+  /* Safe Area Support */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* iOS Safe Area Utilities */
+.header-safe-top {
+  padding-top: max(3.75rem, calc(env(safe-area-inset-top, 0px) + 1.5rem)) !important;
+}
+
+.modal-safe-inset {
+  padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 1rem)) !important;
+  padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem)) !important;
+}
+
+.bottom-nav-safe {
+  padding-bottom: max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.6rem)) !important;
 }
 
 .dark {

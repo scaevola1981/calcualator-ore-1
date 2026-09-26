@@ -75,7 +75,7 @@ export const Shift2Modal: React.FC<Shift2ModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto animate-fade-in modal-safe-inset">
       <div className="bg-white dark:bg-[#101F30] w-full max-w-lg rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden my-auto flex flex-col text-gray-900 dark:text-white">
         
         {/* HEADER */}
@@ -138,45 +138,85 @@ export const Shift2Modal: React.FC<Shift2ModalProps> = ({
           </div>
 
           {/* 2. SELECTOR PRECIS ORĂ / MINUT */}
-          <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+          <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
                 Altă oră de plecare:
               </span>
-              <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
-                16:30 ➔ {String(selectedHour).padStart(2, '0')}:{String(selectedMinute).padStart(2, '0')} (ziua următoare)
+              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                selectedHour >= 22
+                  ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                  : 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'
+              }`}>
+                {selectedHour >= 22 ? '🌙 Aceeași seară' : '🌌 Ziua următoare'}
               </span>
             </div>
 
-            <div className="flex items-center justify-center gap-3">
+            {/* Selector Digital Oră : Minut */}
+            <div className="flex items-center justify-center gap-2 py-1">
               {/* ORA */}
-              <select
-                value={selectedHour}
-                onChange={(e) => setSelectedHour(parseInt(e.target.value))}
-                className="bg-white dark:bg-[#132337] border border-gray-200 dark:border-white/15 rounded-xl px-4 py-2.5 font-mono text-lg font-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {/* Ore posibile de plecare din schimbul 2 (22:00 până la 07:00) */}
-                {[22, 23, 0, 1, 2, 3, 4, 5, 6, 7].map((h) => (
-                  <option key={h} value={h} className="bg-white dark:bg-[#132337]">
-                    {String(h).padStart(2, '0')} {h >= 22 ? '(seară)' : '(noapte/dimineață)'}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-col items-center">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                  Ora
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedHour}
+                    onChange={(e) => setSelectedHour(parseInt(e.target.value))}
+                    className="w-24 sm:w-28 h-12 text-center bg-white dark:bg-[#132337] border-2 border-indigo-400/40 dark:border-indigo-400/30 rounded-2xl font-mono text-2xl font-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-xs appearance-none"
+                    style={{ textAlignLast: 'center' }}
+                  >
+                    {[22, 23, 0, 1, 2, 3, 4, 5, 6, 7].map((h) => (
+                      <option key={h} value={h} className="bg-white dark:bg-[#132337] text-gray-900 dark:text-white font-mono text-base">
+                        {String(h).padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">
+                    ▼
+                  </div>
+                </div>
+              </div>
 
-              <span className="text-xl font-black text-gray-400">:</span>
+              <span className="text-3xl font-black text-indigo-500/80 mt-5">:</span>
 
               {/* MINUT */}
-              <select
-                value={selectedMinute}
-                onChange={(e) => setSelectedMinute(parseInt(e.target.value))}
-                className="bg-white dark:bg-[#132337] border border-gray-200 dark:border-white/15 rounded-xl px-4 py-2.5 font-mono text-lg font-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {[0, 15, 30, 45].map((m) => (
-                  <option key={m} value={m} className="bg-white dark:bg-[#132337]">
-                    {String(m).padStart(2, '0')} min
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-col items-center">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                  Minut
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedMinute}
+                    onChange={(e) => setSelectedMinute(parseInt(e.target.value))}
+                    className="w-24 sm:w-28 h-12 text-center bg-white dark:bg-[#132337] border-2 border-indigo-400/40 dark:border-indigo-400/30 rounded-2xl font-mono text-2xl font-black text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-xs appearance-none"
+                    style={{ textAlignLast: 'center' }}
+                  >
+                    {[0, 15, 30, 45].map((m) => (
+                      <option key={m} value={m} className="bg-white dark:bg-[#132337] text-gray-900 dark:text-white font-mono text-base">
+                        {String(m).padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">
+                    ▼
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Scurt info interval */}
+            <div className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400">
+              Program tură:{' '}
+              <span className="font-mono font-bold text-gray-900 dark:text-white">16:30</span>
+              {' ➔ '}
+              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                {String(selectedHour).padStart(2, '0')}:{String(selectedMinute).padStart(2, '0')}
+              </span>
+              {' '}
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                ({selectedHour >= 22 ? 'aceeași seară' : 'ziua următoare'})
+              </span>
             </div>
           </div>
 

@@ -59,7 +59,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-safe-inset overflow-y-auto bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
         {/* Header */}
         <div className="bg-gradient-primary p-6 text-white text-center">

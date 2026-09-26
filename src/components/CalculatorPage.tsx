@@ -323,7 +323,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-36">
       {/* HEADER CU GLASSMORPHISM */}
-      <header className="px-6 pt-12 pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
+      <header className="px-6 header-safe-top pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-sm flex items-center gap-2">

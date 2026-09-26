@@ -37,7 +37,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="space-y-5 animate-fade-in pb-48 px-4">
       {/* HEADER */}
-      <header className="px-6 pt-12 pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white -mx-4">
+      <header className="px-6 header-safe-top pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white -mx-4">
         <h1 className="text-2xl sm:text-3xl font-black mb-1 tracking-tight drop-shadow-sm">
           Setări ⚙️
         </h1>
