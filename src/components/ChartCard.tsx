@@ -78,68 +78,67 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   };
 
   return (
-    <div className={`w-full min-w-0 p-4 sm:p-6 animate-fade-in relative z-10 rounded-[26px] transition-all duration-300 ${isDark
-      ? 'bg-[#132337] border border-white/10 shadow-lg shadow-black/40'
-      : 'bg-white border border-gray-100 shadow-lg shadow-gray-200/50'
-      }`}>
+    <div className="w-full min-w-0 p-4 sm:p-6 animate-fade-in relative z-10 nm-card">
       {/* Header with Navigation */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <button
           onClick={onPrevWeek}
           disabled={isPrevDisabled}
-          className={`p-2 rounded-xl transition-all ${
+          className={`nm-btn-round !w-9 !h-9 transition-all ${
             isPrevDisabled
               ? 'opacity-30 cursor-not-allowed text-gray-400'
-              : 'hover:bg-gray-100 dark:hover:bg-white/10 active:scale-95 text-gray-700 dark:text-gray-200'
+              : 'text-[var(--nm-text)]'
           }`}
           aria-label="Săptămâna anterioară"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
         <div className="flex flex-col items-center min-w-0 flex-1 text-center">
-          <h3 className="font-black text-xs sm:text-sm tracking-wider uppercase text-gray-900 dark:text-white truncate">
+          <h3 className="font-black text-xs sm:text-sm tracking-wider uppercase text-[var(--nm-text)] truncate">
             {title}
           </h3>
           {subtitle && (
-            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 font-mono mt-0.5">
-              {subtitle}
-            </span>
+            <div className="nm-inset-sm px-2.5 py-0.5 mt-1 inline-block">
+              <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 font-mono">
+                {subtitle}
+              </span>
+            </div>
           )}
         </div>
 
         <button
           onClick={onNextWeek}
           disabled={isNextDisabled}
-          className={`p-2 rounded-xl transition-all ${
+          className={`nm-btn-round !w-9 !h-9 transition-all ${
             isNextDisabled
               ? 'opacity-30 cursor-not-allowed text-gray-400'
-              : 'hover:bg-gray-100 dark:hover:bg-white/10 active:scale-95 text-gray-700 dark:text-gray-200'
+              : 'text-[var(--nm-text)]'
           }`}
           aria-label="Săptămâna următoare"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Legend & Weekly Total */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pt-1 border-t border-gray-100 dark:border-white/5 text-xs font-semibold">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]"></span>
-            <span className="text-[11px]">Normale</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pt-2 border-t border-[var(--nm-border)] text-xs font-semibold">
+        <div className="flex items-center gap-2">
+          <div className="nm-inset-sm px-2.5 py-1 flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7] shadow-xs"></span>
+            <span className="text-[10px] font-bold uppercase">Normale</span>
           </div>
           {!hasNoLimit && (
-            <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]"></span>
-              <span className="text-[11px]">Suplimentare</span>
+            <div className="nm-inset-sm px-2.5 py-1 flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6] shadow-xs"></span>
+              <span className="text-[10px] font-bold uppercase">Suplim.</span>
             </div>
           )}
         </div>
 
         {weekTotals && (
-          <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 font-mono">
-            Total: <span className="text-gray-900 dark:text-white font-black">{formatHoursMinutes(weekTotals.total)}</span>
+          <div className="nm-inset-sm px-2.5 py-1 text-[11px] font-bold text-[var(--nm-text-muted)] font-mono">
+            Total: <span className="text-[var(--nm-text)] font-black">{formatHoursMinutes(weekTotals.total)}</span>
           </div>
         )}
       </div>

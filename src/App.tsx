@@ -421,17 +421,16 @@ const App: React.FC = () => {
     return (
       <button
         onClick={() => setPage(id)}
-        className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-300 relative ${isActive ? "text-blue-400 scale-110" : "text-gray-400 hover:text-gray-200"
-          }`}
+        className={`flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-2xl transition-all duration-200 relative ${
+          isActive
+            ? "nm-nav-active font-black scale-105"
+            : "text-[var(--nm-text-muted)] hover:text-[var(--nm-text)] active:scale-95"
+        }`}
       >
-        <Icon size={isActive ? 24 : 20} strokeWidth={isActive ? 2.5 : 2} />
-        <span className={`text-[10px] font-medium transition-all ${isActive ? "opacity-100" : "opacity-70"}`}>
+        <Icon size={isActive ? 21 : 19} strokeWidth={isActive ? 2.5 : 2} />
+        <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? "font-black" : "font-medium"}`}>
           {label}
         </span>
-        {/* Active Dot Indicator */}
-        {isActive && (
-          <div className="absolute -bottom-1 w-1 h-1 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse" />
-        )}
       </button>
     );
   };
@@ -464,37 +463,38 @@ const App: React.FC = () => {
   };
 
   return (
-    <div id="app-root" className="min-h-screen transition-colors duration-300 bg-[#F5F7FA] dark:bg-gray-900 pb-20">
-      <div className={`max-w-[450px] mx-auto min-h-screen relative shadow-2xl overflow-hidden ${settings.theme === 'dark' ? 'bg-[#0D1B2A]' : 'bg-[#F5F7FA]'}`}>
+    <div id="app-root" className="min-h-screen transition-colors duration-300 bg-[var(--nm-bg)] pb-20">
+      <div className="max-w-[450px] mx-auto min-h-screen relative shadow-2xl overflow-hidden bg-[var(--nm-bg)]">
 
         <div className="relative z-10 flex flex-col h-full min-h-screen">
-
-
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-1 relative">
             {page === "home" && (
               <div className="animate-fade-in">
-                {/* Header Info - Clean Gradient Banner */}
-                <header className="px-6 header-safe-top pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
+                {/* Neo-Skeuomorphic Header Deck */}
+                <header className="px-6 header-safe-top pb-6 nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-1 relative z-20">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm">
-                        Salut, {settings.userName || 'Alex'}! 👋
+                      <h1 className="text-2xl sm:text-3xl font-black text-[var(--nm-text)] tracking-tight">
+                        Salut, {settings.userName || 'Florin'}! 👋
                       </h1>
-                      <p className="text-white/90 font-medium text-xs sm:text-sm mt-1 capitalize">
-                        {new Date().toLocaleDateString("ro-RO", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
+                      <div className="nm-inset px-3 py-1 mt-2 inline-flex items-center gap-2">
+                        <span className="nm-led nm-led-green"></span>
+                        <p className="text-xs font-bold text-[var(--nm-text-muted)] capitalize">
+                          {new Date().toLocaleDateString("ro-RO", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
                     </div>
                     <button
                       onClick={handleHardRefresh}
                       title="Reîmprospătează aplicația (Curăță Cache)"
-                      className="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white backdrop-blur-md flex items-center gap-1.5 shadow-sm"
+                      className="nm-btn-round"
                     >
                       <RotateCw size={18} />
                     </button>
@@ -504,76 +504,87 @@ const App: React.FC = () => {
                 {/* Content Container with ample bottom padding for floating controls */}
                 <div className="px-5 pt-5 pb-52 space-y-4">
 
-
                   {/* ROW 1: Monthly Stats (Normal & Overtime) */}
                   <div className="grid grid-cols-2 gap-3.5">
                     {/* Normal Hours */}
-                    <div className="bg-gradient-to-br from-[#0284C7] to-[#0369A1] dark:from-[#0C3058] dark:to-[#082240] dark:border dark:border-sky-500/20 relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-sky-500/20 dark:shadow-none text-white flex flex-col justify-between min-h-[120px] transition-all">
-                      <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
-                        <Clock size={48} className="text-white" />
+                    <div className="nm-card p-4 sm:p-5 flex flex-col justify-between min-h-[125px] relative group">
+                      <div className="flex items-center justify-between">
+                        <div className="nm-inset-sm px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                          Ore Normale
+                        </div>
+                        <div className="nm-inset w-8 h-8 rounded-full flex items-center justify-center text-sky-600 dark:text-sky-400 shadow-inner">
+                          <Clock size={16} />
+                        </div>
                       </div>
-                      <div className="relative z-10">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-sky-100 dark:text-sky-300 mb-1">
-                          ORE NORMALE
-                        </p>
-                        <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      <div className="mt-3">
+                        <h3 className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[var(--nm-text)]">
                           {formatTime(currentMonthStats.totalNormal)}
                         </h3>
+                        <p className="text-[10px] font-bold text-[var(--nm-text-muted)] uppercase tracking-wider mt-0.5">
+                          Luna Curentă
+                        </p>
                       </div>
                     </div>
 
                     {/* Overtime Hours */}
-                    <div className="bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] dark:from-[#3B1F75] dark:to-[#2A1556] dark:border dark:border-purple-500/20 relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-indigo-500/20 dark:shadow-none text-white flex flex-col justify-between min-h-[120px] transition-all">
-                      <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
-                        <Zap size={48} className="text-white" />
+                    <div className="nm-card p-4 sm:p-5 flex flex-col justify-between min-h-[125px] relative group">
+                      <div className="flex items-center justify-between">
+                        <div className="nm-inset-sm px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                          Ore Suplim.
+                        </div>
+                        <div className="nm-inset w-8 h-8 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-inner">
+                          <Zap size={16} />
+                        </div>
                       </div>
-                      <div className="relative z-10">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-100 dark:text-purple-300 mb-1">
-                          ORE SUPLIM.
-                        </p>
-                        <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      <div className="mt-3">
+                        <h3 className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-purple-600 dark:text-purple-400">
                           {formatTime(currentMonthStats.totalOvertime)}
                         </h3>
+                        <p className="text-[10px] font-bold text-[var(--nm-text-muted)] uppercase tracking-wider mt-0.5">
+                          Luna Curentă
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* ROW 2: Tickets & Value (Wide Card) */}
-                  <div className="bg-gradient-to-r from-[#0F766E] to-[#0D9488] dark:from-[#0A3D38] dark:to-[#072B28] dark:border dark:border-teal-500/20 relative overflow-hidden rounded-[24px] p-5 shadow-lg shadow-teal-500/20 dark:shadow-none text-white flex justify-between items-center min-h-[85px] transition-all">
+                  {/* ROW 2: Tickets & Value (Wide Neumorphic Card) */}
+                  <div className="nm-card p-4 sm:p-5 flex justify-between items-center min-h-[85px]">
                     {/* Left: Count */}
-                    <div className="relative z-10">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 dark:text-teal-300 mb-1">
-                        TICHETE MASĂ (L-V)
-                      </p>
-                      <h3 className="text-2xl font-black text-white flex items-baseline gap-1">
+                    <div>
+                      <div className="nm-inset-sm px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-teal-600 dark:text-teal-400 inline-block mb-1">
+                        Tichete Masă (L-V)
+                      </div>
+                      <h3 className="text-2xl font-black font-mono text-[var(--nm-text)] flex items-baseline gap-1.5">
                         {currentMonthStats.ticketDaysCount}
-                        <span className="text-sm font-bold text-teal-100 dark:text-teal-300"> Tichete</span>
+                        <span className="text-xs font-bold text-[var(--nm-text-muted)]">Tichete</span>
                       </h3>
                     </div>
 
                     {/* Right: Value */}
-                    <div className="text-right relative z-10">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-teal-100 dark:text-teal-300 mb-1">
-                        VALOARE TOTALĂ
-                      </p>
-                      <h3 className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
+                    <div className="text-right">
+                      <div className="nm-inset-sm px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-teal-600 dark:text-teal-400 inline-block mb-1">
+                        Valoare Totală
+                      </div>
+                      <h3 className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 flex items-baseline justify-end gap-1.5">
                         {currentMonthStats.ticketDaysCount * (settings.mealTicketValue || 22)}
-                        <span className="text-sm font-bold text-teal-100 dark:text-teal-300"> RON</span>
+                        <span className="text-xs font-bold text-[var(--nm-text-muted)]">RON</span>
                       </h3>
                     </div>
                   </div>
 
                   {/* Schimburile Reale: Schimbul 1 (06:30-16:30) & Schimbul 2 (16:30 -> flexibil) */}
-                  <div className="bg-white dark:bg-[#132337]/85 border border-gray-100 dark:border-white/10 rounded-[28px] p-5 shadow-md dark:shadow-black/40 backdrop-blur-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 uppercase tracking-wider">
+                  <div className="nm-card p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-[var(--nm-text)] flex items-center gap-1.5 uppercase tracking-wider">
                         <Zap size={15} className="text-amber-500" />
                         <span>Înregistrează tura de azi:</span>
                       </span>
-                      <span className="text-[10px] text-gray-400 font-semibold">2 Schimburi Fabrică</span>
+                      <div className="nm-inset-sm px-2.5 py-0.5 text-[10px] font-black uppercase text-[var(--nm-text-muted)]">
+                        2 Schimburi Fabrică
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       {/* CARD SCHIMBUL 1 */}
                       <button
                         type="button"
@@ -583,21 +594,32 @@ const App: React.FC = () => {
                           handleManualAddSession(newSession);
                           addNotification("Schimbul 1 (06:30 – 16:30) înregistrat cu succes! (8h normă + 1.5h suplimentare)");
                         }}
-                        className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/15 dark:from-amber-950/40 dark:to-orange-950/20 hover:from-amber-500/20 hover:to-orange-500/15 border border-amber-300/40 dark:border-amber-600/30 text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-xs"
+                        className="nm-shift-card p-4 flex flex-col justify-between group"
                       >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-2xl">🌅</span>
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                            1-Click Rapid
-                          </span>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl drop-shadow-sm">🌅</span>
+                          <div className="nm-inset-sm px-2 py-0.5 flex items-center gap-1.5">
+                            <span className="nm-led nm-led-amber"></span>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                              1-Click Rapid
+                            </span>
+                          </div>
                         </div>
-                        <h4 className="text-base font-black text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400">
+
+                        <h4 className="text-base font-black text-[var(--nm-text)] group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                           Schimbul 1
                         </h4>
-                        <p className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                          06:30 – 16:30
-                        </p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium leading-relaxed">
+
+                        <div className="nm-inset px-2.5 py-1.5 my-2 flex items-center justify-between">
+                          <span className="text-xs font-mono font-black text-amber-600 dark:text-amber-400">
+                            06:30 ➔ 16:30
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                            8h + 1.5h
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-[var(--nm-text-muted)] font-medium leading-relaxed">
                           8h normă + 1.5h suplim. (pauză 30m inclusă)
                         </p>
                       </button>
@@ -606,28 +628,39 @@ const App: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setIsShift2ModalOpen(true)}
-                        className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-indigo-500/15 dark:from-indigo-950/40 dark:to-purple-950/20 hover:from-indigo-500/20 hover:to-purple-500/15 border border-indigo-300/40 dark:border-indigo-600/30 text-left transition-all active:scale-[0.98] group relative overflow-hidden shadow-xs"
+                        className="nm-shift-card p-4 flex flex-col justify-between group"
                       >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-2xl">🌙</span>
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-300">
-                            Oră Flexibilă
-                          </span>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl drop-shadow-sm">🌙</span>
+                          <div className="nm-inset-sm px-2 py-0.5 flex items-center gap-1.5">
+                            <span className="nm-led nm-led-indigo"></span>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                              Oră Flexibilă
+                            </span>
+                          </div>
                         </div>
-                        <h4 className="text-base font-black text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+
+                        <h4 className="text-base font-black text-[var(--nm-text)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                           Schimbul 2
                         </h4>
-                        <p className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                          16:30 ➔ plecare variabilă
-                        </p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium leading-relaxed">
+
+                        <div className="nm-inset px-2.5 py-1.5 my-2 flex items-center justify-between">
+                          <span className="text-xs font-mono font-black text-indigo-600 dark:text-indigo-400">
+                            16:30 ➔ flexibil
+                          </span>
+                          <span className="text-[10px] font-bold text-indigo-500">
+                            Alege ora ➜
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-[var(--nm-text-muted)] font-medium leading-relaxed">
                           Alege când ai plecat (01:00, 02:00 etc.) ➜
                         </p>
                       </button>
                     </div>
 
                     {/* Opțiuni suplimentare / pornire live Schimbul 2 */}
-                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                    <div className="pt-3 border-t border-[var(--nm-border)] flex flex-wrap items-center justify-between gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -640,7 +673,7 @@ const App: React.FC = () => {
                           }
                           addNotification("Cronometru Schimbul 2 pornit live (start setat la 16:30)!");
                         }}
-                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 active:scale-95 transition-all"
+                        className="nm-btn py-1.5 px-3 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5"
                       >
                         <span>▶️</span>
                         <span>Pornește Schimbul 2 live (de la 16:30)</span>
@@ -654,7 +687,7 @@ const App: React.FC = () => {
                           handleManualAddSession(newSession);
                           addNotification("Schimbul 1 scurt (06:30 – 15:00) înregistrat cu succes! (8h normă)");
                         }}
-                        className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:underline flex items-center gap-1 active:scale-95 transition-all"
+                        className="nm-btn py-1.5 px-3 rounded-xl text-xs font-bold text-[var(--nm-text-muted)] hover:text-[var(--nm-text)] flex items-center gap-1.5"
                       >
                         <span>☀️</span>
                         <span>Sch. 1 scurt (06:30 - 15:00)</span>
@@ -711,35 +744,32 @@ const App: React.FC = () => {
             )}
           </main>
 
-          {/* START/STOP BUTTON (STICKY) */}
+          {/* START/STOP BUTTON (STICKY 3D POWER PILL) */}
           {page === 'home' && (
             <div className="fixed start-btn-safe left-0 right-0 z-40 flex justify-center w-full px-4 pointer-events-none">
               <div className="max-w-[420px] w-full flex justify-center pointer-events-auto">
                 <button
                   onClick={handleStartStop}
                   className={`
-                          flex items-center gap-3 px-8 py-3.5
-                          rounded-full shadow-xl
-                          transition-all duration-300
-                          ${isWorking
-                      ? 'bg-red-500 shadow-red-500/40 hover:bg-red-600'
-                      : 'bg-[#10B981] shadow-emerald-500/40 hover:bg-[#059669] animate-glow-green'
-                    }
-                          hover:scale-105 active:scale-95
-                      `}
+                    flex items-center gap-3 px-8 py-3.5
+                    rounded-full font-black text-base tracking-wide
+                    ${isWorking ? 'nm-power-btn-stop' : 'nm-power-btn-start'}
+                  `}
                 >
-                  {isWorking ? <Square fill="white" size={18} /> : <Clock strokeWidth={2.5} size={22} className="text-white" />}
-                  <span className="text-white font-bold text-base tracking-wide">
-                    {isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}
-                  </span>
+                  {isWorking ? (
+                    <Square fill="white" size={18} />
+                  ) : (
+                    <Clock strokeWidth={2.5} size={22} className="text-white" />
+                  )}
+                  <span>{isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION (Floating Dark Navy) */}
+          {/* BOTTOM NAVIGATION (Neo-Skeuomorphic Floating Dock) */}
           <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-4 bottom-nav-safe pointer-events-none">
-            <div className="max-w-[420px] w-full pointer-events-auto bg-[#0D1B2A]/95 dark:bg-[#08121E]/95 backdrop-blur-md rounded-[24px] shadow-2xl border border-white/10">
+            <div className="max-w-[420px] w-full pointer-events-auto nm-nav-dock">
               <div className="flex items-center justify-around h-16 px-2">
                 <NavItem id="home" label="Acasă" icon={Home} />
                 <NavItem id="history" label="Istoric" icon={History} />
