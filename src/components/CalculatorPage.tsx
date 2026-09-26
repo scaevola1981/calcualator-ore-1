@@ -322,26 +322,29 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in pb-36">
-      {/* HEADER CU GLASSMORPHISM */}
-      <header className="px-6 header-safe-top pb-7 header-gradient-bg rounded-b-[32px] shadow-lg text-white">
+      {/* HEADER NEO-SKEUOMORPHIC */}
+      <header className="px-6 header-safe-top pb-6 nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-1 relative z-20">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-sm flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-[var(--nm-text)] tracking-tight flex items-center gap-2">
               Calculator & Fluturaș ⚖️
             </h1>
-            <p className="text-white/90 text-xs sm:text-sm font-medium mt-1">
-              Simulator Salariu & Audit Cap-la-Cap • Avicarvil
-            </p>
+            <div className="nm-inset px-3 py-1 mt-2 inline-flex items-center gap-2">
+              <span className="nm-led nm-led-indigo"></span>
+              <p className="text-xs font-bold text-[var(--nm-text-muted)]">
+                Simulator Salariu & Audit Cap-la-Cap • Avicarvil
+              </p>
+            </div>
           </div>
 
           {/* TAB SWITCHER */}
-          <div className="bg-black/25 p-1.5 rounded-2xl flex relative backdrop-blur-md border border-white/20 w-full sm:w-auto">
+          <div className="nm-inset p-1.5 rounded-2xl flex relative w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('simulator')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'simulator'
-                  ? 'bg-white text-blue-600 dark:bg-blue-600 dark:text-white shadow-md scale-100'
-                  : 'text-white/80 hover:bg-white/10'
+                  ? 'nm-card-sm text-sky-600 dark:text-sky-400 font-black scale-100 shadow-sm'
+                  : 'text-[var(--nm-text-muted)] hover:text-[var(--nm-text)]'
               }`}
             >
               <DollarSign size={16} />
@@ -349,10 +352,10 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('audit')}
-              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === 'audit'
-                  ? 'bg-emerald-500 text-white shadow-md scale-100'
-                  : 'text-white/80 hover:bg-white/10'
+                  ? 'nm-card-sm text-emerald-600 dark:text-emerald-400 font-black scale-100 shadow-sm'
+                  : 'text-[var(--nm-text-muted)] hover:text-[var(--nm-text)]'
               }`}
             >
               <FileText size={16} />
@@ -364,27 +367,27 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
 
       {/* SELECTOR LUNĂ PENTRU SIMULARE / AUDIT */}
       <div className="px-5">
-        <div className="flex items-center justify-between bg-white dark:bg-[#132337] p-3 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm">
+        <div className="flex items-center justify-between nm-card p-3 rounded-2xl">
           <button
             onClick={() => setSelectedMonthOffset(prev => prev - 1)}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold"
+            className="nm-btn-round !w-9 !h-9 text-[var(--nm-text)]"
             title="Luna precedentă"
           >
             ←
           </button>
-          <div className="text-center">
-            <span className="text-xs text-gray-400 dark:text-gray-400 block uppercase font-bold tracking-wider">
+          <div className="nm-inset-sm px-4 py-1 text-center">
+            <span className="text-[10px] text-[var(--nm-text-muted)] block uppercase font-bold tracking-wider">
               Luna de referință
             </span>
-            <span className="text-sm font-black text-gray-900 dark:text-white capitalize">
+            <span className="text-sm font-black text-[var(--nm-text)] capitalize">
               {targetDate.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
             </span>
           </div>
           <button
             onClick={() => setSelectedMonthOffset(prev => (prev < 0 ? prev + 1 : 0))}
             disabled={selectedMonthOffset >= 0}
-            className={`p-2 rounded-xl text-gray-700 dark:text-gray-300 font-bold ${
-              selectedMonthOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-white/10'
+            className={`nm-btn-round !w-9 !h-9 text-[var(--nm-text)] ${
+              selectedMonthOffset >= 0 ? 'opacity-30 cursor-not-allowed' : ''
             }`}
             title="Luna următoare"
           >
@@ -397,35 +400,39 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
       {activeTab === 'simulator' && (
         <div className="px-5 space-y-5">
           {/* CARDS MARI REZULTAT */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-[28px] p-6 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden">
+          <div className="nm-card p-6 relative overflow-hidden">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-xs uppercase tracking-wider font-bold text-emerald-100">
+              <div className="nm-inset-sm px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 Rest de Plată (Lichidare pe Card)
-              </span>
-              <span className="px-2.5 py-1 bg-white/20 rounded-full text-[11px] font-bold backdrop-blur-md">
+              </div>
+              <div className="nm-inset-sm px-2.5 py-1 text-[10px] font-black uppercase text-[var(--nm-text-muted)]">
                 După Avans
-              </span>
-            </div>
-            <div className="text-4xl sm:text-5xl font-black tracking-tight drop-shadow-sm mb-4">
-              {simResult.restDePlata.toLocaleString('ro-RO')} <span className="text-2xl font-bold">RON</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/20 text-xs">
-              <div>
-                <span className="text-emerald-100 block font-medium">Salariu Net Total:</span>
-                <span className="text-base font-bold">{simResult.netSalary.toLocaleString('ro-RO')} RON</span>
+            <div className="nm-inset p-4 my-3 rounded-2xl text-center">
+              <span className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+                {simResult.restDePlata.toLocaleString('ro-RO')}
+              </span>
+              <span className="text-xl font-bold ml-2 text-emerald-600 dark:text-emerald-400">RON</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[var(--nm-border)] text-xs">
+              <div className="nm-inset-sm p-2.5">
+                <span className="text-[10px] text-[var(--nm-text-muted)] block font-bold uppercase">Salariu Net Total:</span>
+                <span className="text-base font-black font-mono text-[var(--nm-text)]">{simResult.netSalary.toLocaleString('ro-RO')} RON</span>
               </div>
-              <div>
-                <span className="text-emerald-100 block font-medium">Venit Brut Total:</span>
-                <span className="text-base font-bold">{simResult.grossTotal.toLocaleString('ro-RO')} RON</span>
+              <div className="nm-inset-sm p-2.5">
+                <span className="text-[10px] text-[var(--nm-text-muted)] block font-bold uppercase">Venit Brut Total:</span>
+                <span className="text-base font-black font-mono text-[var(--nm-text)]">{simResult.grossTotal.toLocaleString('ro-RO')} RON</span>
               </div>
             </div>
           </div>
 
           {/* CONTROALE ORE ȘI SLIDERE */}
-          <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm space-y-5">
-            <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+          <div className="nm-card p-5 space-y-5">
+            <div className="flex justify-between items-center pb-2 border-b border-[var(--nm-border)]">
+              <h3 className="text-xs font-black text-[var(--nm-text)] uppercase tracking-wider flex items-center gap-2">
                 <Clock size={16} className="text-blue-500" />
                 Ore Lucrate în Lună
               </h3>
@@ -439,7 +446,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     mealTicketsCount: recordedStats.ticketDaysCount > 0 ? recordedStats.ticketDaysCount : standardWorkingDays,
                   }));
                 }}
-                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                className="nm-btn px-2.5 py-1 rounded-xl text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 active:scale-95"
                 title="Resetează la valorile reale înregistrate de aplicație"
               >
                 <RefreshCw size={12} />
@@ -515,14 +522,14 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
             {/* 4. Concediu de Odihnă (CO) & Tichete */}
             <div className="grid grid-cols-2 gap-3 pt-2">
               <div>
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                <label className="text-xs font-bold text-[var(--nm-text)] block mb-1">
                   Zile Concediu (CO)
                 </label>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setSimInputs(prev => ({ ...prev, vacationDays: Math.max(0, prev.vacationDays - 1) }))}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                    className="nm-btn-round !w-9 !h-9 text-[var(--nm-text)] font-bold text-lg shrink-0"
                   >
                     −
                   </button>
@@ -537,12 +544,12 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                       const val = e.target.value;
                       setSimInputs({ ...simInputs, vacationDays: val === '' ? 0 : Math.max(0, parseInt(val) || 0) });
                     }}
-                    className="w-full text-center p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                    className="w-full text-center nm-inset p-2 font-mono text-sm font-bold text-[var(--nm-text)] rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setSimInputs(prev => ({ ...prev, vacationDays: Math.min(25, prev.vacationDays + 1) }))}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                    className="nm-btn-round !w-9 !h-9 text-[var(--nm-text)] font-bold text-lg shrink-0"
                   >
                     +
                   </button>
@@ -550,15 +557,15 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1 flex items-center gap-1">
+                <label className="text-xs font-bold text-[var(--nm-text)] block mb-1 flex items-center gap-1">
                   <Ticket size={14} className="text-teal-500" />
-                  Tichete Masă ({simInputs.mealTicketValue} lei)
+                  Tichete ({simInputs.mealTicketValue} lei)
                 </label>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setSimInputs(prev => ({ ...prev, mealTicketsCount: Math.max(0, prev.mealTicketsCount - 1) }))}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                    className="nm-btn-round !w-9 !h-9 text-[var(--nm-text)] font-bold text-lg shrink-0"
                   >
                     −
                   </button>
@@ -573,12 +580,12 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                       const val = e.target.value;
                       setSimInputs({ ...simInputs, mealTicketsCount: val === '' ? 0 : Math.max(0, parseInt(val) || 0) });
                     }}
-                    className="w-full text-center p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                    className="w-full text-center nm-inset p-2 font-mono text-sm font-bold text-[var(--nm-text)] rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setSimInputs(prev => ({ ...prev, mealTicketsCount: Math.min(31, prev.mealTicketsCount + 1) }))}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold active:scale-95 text-lg shrink-0"
+                    className="nm-btn-round !w-9 !h-9 text-[var(--nm-text)] font-bold text-lg shrink-0"
                   >
                     +
                   </button>
@@ -589,10 +596,10 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
             {/* 5. Primă Ore Suplimentare (Prima OS) */}
             <div className="pt-1">
               <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                <label className="text-xs font-bold text-[var(--nm-text)]">
                   Primă Ore Suplimentare (Prima OS - RON)
                 </label>
-                <span className="text-[11px] text-gray-400">opțional</span>
+                <span className="text-[11px] text-[var(--nm-text-muted)]">opțional</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -606,13 +613,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     const val = e.target.value;
                     setSimInputs({ ...simInputs, primaOS: val === '' ? 0 : Math.max(0, parseFloat(val) || 0) });
                   }}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                  className="w-full nm-inset p-2.5 font-mono text-sm font-bold text-[var(--nm-text)] rounded-xl"
                 />
                 {simInputs.primaOS > 0 && (
                   <button
                     type="button"
                     onClick={() => setSimInputs(prev => ({ ...prev, primaOS: 0 }))}
-                    className="px-3 py-2.5 bg-gray-100 dark:bg-white/10 text-xs font-bold text-gray-700 dark:text-gray-300 rounded-xl whitespace-nowrap active:scale-95"
+                    className="nm-btn px-3 py-2.5 text-xs font-bold text-[var(--nm-text)] rounded-xl whitespace-nowrap active:scale-95"
                   >
                     Reset 0
                   </button>
@@ -622,7 +629,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
 
             {/* 6. Avans Salariu Reținut */}
             <div className="pt-1">
-              <label className="text-xs font-bold text-gray-700 dark:text-gray-300 block mb-1">
+              <label className="text-xs font-bold text-[var(--nm-text)] block mb-1">
                 Avans Reținut (RON)
               </label>
               <div className="flex items-center gap-2">
@@ -637,12 +644,12 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     const val = e.target.value;
                     setSimInputs({ ...simInputs, advancePayment: val === '' ? 0 : Math.max(0, parseFloat(val) || 0) });
                   }}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl font-mono text-sm font-bold text-gray-900 dark:text-white"
+                  className="w-full nm-inset p-2.5 font-mono text-sm font-bold text-[var(--nm-text)] rounded-xl"
                 />
                 <button
                   type="button"
                   onClick={() => setSimInputs(prev => ({ ...prev, advancePayment: 1500 }))}
-                  className="px-3 py-2.5 bg-gray-100 dark:bg-white/10 text-xs font-bold text-gray-700 dark:text-gray-300 rounded-xl whitespace-nowrap active:scale-95"
+                  className="nm-btn px-3 py-2.5 text-xs font-bold text-[var(--nm-text)] rounded-xl whitespace-nowrap active:scale-95"
                 >
                   Standard 1500
                 </button>
@@ -651,55 +658,57 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
           </div>
 
           {/* ACORDEON DETALIERE FLUTURAȘ */}
-          <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm">
+          <div className="nm-card p-5 space-y-3">
             <button
               onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
               className="w-full flex justify-between items-center text-left"
             >
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-blue-500" />
-                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                <span className="text-sm font-black text-[var(--nm-text)]">
                   Desfășurător Fluturaș (Drepturi, Taxe & Rețineri)
                 </span>
               </div>
-              {showAdvancedSettings ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              <div className="nm-btn-round !w-8 !h-8 text-[var(--nm-text)]">
+                {showAdvancedSettings ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
             </button>
 
             {showAdvancedSettings && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10 space-y-3 text-xs">
-                <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400">Tarif orar de bază ({simInputs.grossBaseSalary} lei / {simInputs.workingDaysInMonth * 8}h):</span>
-                  <span className="font-mono font-bold text-gray-900 dark:text-white">{simResult.hourlyRate} RON/h</span>
+              <div className="mt-4 pt-4 border-t border-[var(--nm-border)] space-y-3 text-xs">
+                <div className="nm-inset-sm p-3 flex justify-between items-center">
+                  <span className="text-[var(--nm-text-muted)] font-medium">Tarif orar de bază ({simInputs.grossBaseSalary} lei / {simInputs.workingDaysInMonth * 8}h):</span>
+                  <span className="font-mono font-black text-[var(--nm-text)]">{simResult.hourlyRate} RON/h</span>
                 </div>
 
                 {/* Drepturi */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">1. Drepturi Salariale (Brut)</span>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <span className="text-[11px] font-black text-[var(--nm-text-muted)] uppercase tracking-wider block">1. Drepturi Salariale (Brut)</span>
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Ore normale ({simInputs.normalHours}h):</span>
                     <span className="font-mono font-semibold">{simResult.normalIncome.toLocaleString('ro-RO')} RON</span>
                   </div>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Ore suplimentare 200% ({simInputs.overtimeHours}h):</span>
                     <span className="font-mono font-semibold">{simResult.overtimeIncome.toLocaleString('ro-RO')} RON</span>
                   </div>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Spor noapte 25% ({simInputs.nightHours}h):</span>
                     <span className="font-mono font-semibold">{simResult.nightBonus.toLocaleString('ro-RO')} RON</span>
                   </div>
                   {simResult.vacationIncome > 0 && (
-                    <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <div className="flex justify-between text-[var(--nm-text)]">
                       <span>Concediu odihnă ({simInputs.vacationDays} zile):</span>
                       <span className="font-mono font-semibold">{simResult.vacationIncome.toLocaleString('ro-RO')} RON</span>
                     </div>
                   )}
                   {simResult.primaOS > 0 && (
-                    <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <div className="flex justify-between text-[var(--nm-text)]">
                       <span>Primă ore suplimentare (Prima OS):</span>
                       <span className="font-mono font-semibold">{simResult.primaOS.toLocaleString('ro-RO')} RON</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Spor ore weekend (1%):</span>
                     <span className="font-mono font-semibold">{simResult.weekendBonus} RON</span>
                   </div>
@@ -707,41 +716,41 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                     <span>Tichete de masă ({simInputs.mealTicketsCount} buc):</span>
                     <span className="font-mono font-bold">{simResult.mealTicketsTotal} RON</span>
                   </div>
-                  <div className="flex justify-between font-bold text-gray-900 dark:text-white pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
+                  <div className="flex justify-between font-black text-[var(--nm-text)] pt-1 border-t border-dashed border-[var(--nm-border)]">
                     <span>TOTAL VENIT BRUT:</span>
                     <span className="font-mono">{simResult.grossTotal.toLocaleString('ro-RO')} RON</span>
                   </div>
                 </div>
 
                 {/* Taxe */}
-                <div className="space-y-1.5 pt-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">2. Taxe & Impozite</span>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <div className="space-y-1.5 pt-2 border-t border-[var(--nm-border)]">
+                  <span className="text-[11px] font-black text-[var(--nm-text-muted)] uppercase tracking-wider block">2. Taxe & Impozite</span>
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>CASS Sănătate (10%):</span>
-                    <span className="font-mono text-red-500 font-semibold">- {simResult.cass.toLocaleString('ro-RO')} RON</span>
+                    <span className="font-mono text-rose-500 font-semibold">- {simResult.cass.toLocaleString('ro-RO')} RON</span>
                   </div>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>CAS Pensii (25% fără tichete):</span>
-                    <span className="font-mono text-red-500 font-semibold">- {simResult.cas.toLocaleString('ro-RO')} RON</span>
+                    <span className="font-mono text-rose-500 font-semibold">- {simResult.cas.toLocaleString('ro-RO')} RON</span>
                   </div>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Impozit pe venit (10%):</span>
-                    <span className="font-mono text-red-500 font-semibold">- {simResult.incomeTax.toLocaleString('ro-RO')} RON</span>
+                    <span className="font-mono text-rose-500 font-semibold">- {simResult.incomeTax.toLocaleString('ro-RO')} RON</span>
                   </div>
                 </div>
 
                 {/* Rețineri */}
-                <div className="space-y-1.5 pt-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">3. Rețineri pe Card</span>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <div className="space-y-1.5 pt-2 border-t border-[var(--nm-border)]">
+                  <span className="text-[11px] font-black text-[var(--nm-text-muted)] uppercase tracking-wider block">3. Rețineri pe Card</span>
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Contravaloare tichete (deja pe cardul de tichete):</span>
                     <span className="font-mono text-amber-500 font-semibold">- {simResult.mealTicketsTotal} RON</span>
                   </div>
-                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                  <div className="flex justify-between text-[var(--nm-text)]">
                     <span>Avans virat anterior:</span>
                     <span className="font-mono text-amber-500 font-semibold">- {simResult.advancePayment.toLocaleString('ro-RO')} RON</span>
                   </div>
-                  <div className="flex justify-between font-black text-emerald-600 dark:text-emerald-400 pt-1 border-t border-gray-200 dark:border-white/10 text-sm">
+                  <div className="nm-inset p-3 rounded-2xl flex justify-between font-black text-emerald-600 dark:text-emerald-400 text-sm mt-2">
                     <span>REST DE PLATĂ FINAL:</span>
                     <span className="font-mono">{simResult.restDePlata.toLocaleString('ro-RO')} RON</span>
                   </div>
@@ -756,20 +765,22 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
       {activeTab === 'audit' && (
         <div className="px-5 space-y-5">
           {/* SECȚIUNE UPLOAD FOTO FLUTURAȘ */}
-          <div className="bg-white dark:bg-[#132337] rounded-[28px] p-5 border border-gray-100 dark:border-white/10 shadow-sm text-center">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3">
-              <Camera size={24} />
+          <div className="nm-card p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl nm-inset text-blue-500 flex items-center justify-center mx-auto shadow-inner">
+              <Camera size={26} />
             </div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              Încarcă sau Fotografiază Fluturașul
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-              Facem automat citirea cifrelor prin OCR și le comparăm cu pontajul tău real.
-            </p>
+            <div>
+              <h3 className="text-base font-black text-[var(--nm-text)]">
+                Încarcă sau Fotografiază Fluturașul
+              </h3>
+              <p className="text-xs text-[var(--nm-text-muted)] mt-1 max-w-xs mx-auto">
+                Facem automat citirea cifrelor prin OCR și le comparăm cu pontajul tău real.
+              </p>
+            </div>
 
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              {/* Opțiunea 1: Alege din Galerie / Poze (FĂRĂ capture) */}
-              <label className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm shadow-md cursor-pointer transition-all">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              {/* Opțiunea 1: Alege din Galerie / Poze */}
+              <label className="w-full sm:w-auto nm-power-btn-start !py-3.5 !px-5 !rounded-2xl text-xs sm:text-sm font-black text-white inline-flex items-center justify-center gap-2 cursor-pointer shadow-md">
                 <Upload size={16} />
                 <span>{uploadedImage ? 'Alege altă Poză din Galerie' : 'Alege din Poze / Galerie'}</span>
                 <input
@@ -781,7 +792,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               </label>
 
               {/* Opțiunea 2: Fă Poză cu Camera */}
-              <label className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-gray-200 dark:border-white/15 active:scale-95 text-gray-800 dark:text-white font-bold text-sm shadow-sm cursor-pointer transition-all">
+              <label className="w-full sm:w-auto nm-btn !py-3.5 !px-5 !rounded-2xl text-xs sm:text-sm font-black text-[var(--nm-text)] inline-flex items-center justify-center gap-2 cursor-pointer">
                 <Camera size={16} className="text-blue-500" />
                 <span>Fă Poză cu Camera</span>
                 <input
@@ -795,13 +806,13 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
             </div>
 
             {isOcrProcessing && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900 text-xs font-bold text-blue-600 dark:text-blue-400">
-                <div className="flex items-center justify-center gap-2 mb-1.5">
+              <div className="mt-4 p-4 nm-inset rounded-2xl text-xs font-bold text-blue-500">
+                <div className="flex items-center justify-center gap-2 mb-2">
                   <RefreshCw size={14} className="animate-spin" />
                   <span>Se analizează fluturașul... ({ocrProgress}%)</span>
                 </div>
-                <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
+                <div className="w-full bg-[var(--nm-bg)] rounded-full h-2 overflow-hidden p-0.5">
+                  <div className="bg-blue-500 h-full rounded-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
                 </div>
               </div>
             )}
@@ -809,14 +820,16 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
 
           {/* VERDICTUL DE AUDIT */}
           {!auditDiffs.hasFluturasData ? (
-            <div className="p-4 rounded-[24px] border border-blue-500/20 bg-blue-500/5 text-blue-950 dark:text-blue-100 backdrop-blur-md">
+            <div className="nm-card p-5 border-l-4 border-l-blue-500">
               <div className="flex items-start gap-3">
-                <FileText size={24} className="text-blue-500 shrink-0 mt-0.5" />
+                <div className="nm-inset-sm p-2 text-blue-500 shrink-0 mt-0.5">
+                  <FileText size={20} />
+                </div>
                 <div>
-                  <h4 className="text-sm font-black tracking-tight">
+                  <h4 className="text-sm font-black text-[var(--nm-text)] tracking-tight">
                     Audit Fluturaș • {targetDate.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })}
                   </h4>
-                  <p className="text-xs mt-1 leading-relaxed opacity-90">
+                  <p className="text-xs text-[var(--nm-text-muted)] mt-1 leading-relaxed">
                     Încarcă o poză cu fluturașul tău sau completează cifrele în coloana „Pe Fluturaș” de mai jos pentru reconciliere automată cu orele din această lună.
                   </p>
                 </div>
@@ -824,25 +837,25 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
             </div>
           ) : (
             <div
-              className={`p-4 rounded-[24px] border backdrop-blur-md transition-all ${
-                auditDiffs.isAllMatched
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100'
-                  : 'bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-100'
+              className={`nm-card p-5 border-l-4 ${
+                auditDiffs.isAllMatched ? 'border-l-emerald-500' : 'border-l-rose-500'
               }`}
             >
               <div className="flex items-start gap-3">
-                {auditDiffs.isAllMatched ? (
-                  <CheckCircle2 size={24} className="text-emerald-500 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle size={24} className="text-red-500 shrink-0 mt-0.5" />
-                )}
+                <div className={`nm-inset-sm p-2 shrink-0 mt-0.5 ${auditDiffs.isAllMatched ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {auditDiffs.isAllMatched ? (
+                    <CheckCircle2 size={20} />
+                  ) : (
+                    <AlertTriangle size={20} />
+                  )}
+                </div>
                 <div>
-                  <h4 className="text-sm font-black tracking-tight">
+                  <h4 className={`text-sm font-black tracking-tight ${auditDiffs.isAllMatched ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {auditDiffs.isAllMatched
                       ? '🟢 Fluturașul este 100% Corect!'
                       : '🔴 Discrepanțe Identificate în Fluturaș!'}
                   </h4>
-                  <p className="text-xs mt-1 leading-relaxed opacity-90">
+                  <p className="text-xs text-[var(--nm-text-muted)] mt-1 leading-relaxed">
                     {auditDiffs.isAllMatched
                       ? 'Orele de regie, suplimentare și de noapte trecute pe fluturaș corespund cu înregistrările tale din aplicație și calculul legal.'
                       : auditDiffs.diffOvertime < 0
@@ -855,26 +868,26 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
           )}
 
           {/* TABEL COMPARATIV CAP-LA-CAP */}
-          <div className="bg-white dark:bg-[#132337] rounded-[24px] p-5 border border-gray-100 dark:border-white/10 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider pb-2 border-b border-gray-100 dark:border-white/5">
+          <div className="nm-card p-5 space-y-4">
+            <h3 className="text-xs font-black text-[var(--nm-text)] uppercase tracking-wider pb-2 border-b border-[var(--nm-border)]">
               Reconciliere Cap-la-Cap (Pontaj vs Fluturaș)
             </h3>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="text-gray-400 font-bold border-b border-gray-100 dark:border-white/5">
-                    <th className="pb-2">Rubrică</th>
-                    <th className="pb-2 text-center">În Aplicație</th>
-                    <th className="pb-2 text-center">Pe Fluturaș</th>
-                    <th className="pb-2 text-right">Diferență</th>
+                  <tr className="text-[var(--nm-text-muted)] font-black border-b border-[var(--nm-border)]">
+                    <th className="pb-2.5">Rubrică</th>
+                    <th className="pb-2.5 text-center">În Aplicație</th>
+                    <th className="pb-2.5 text-center">Pe Fluturaș</th>
+                    <th className="pb-2.5 text-right">Diferență</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-mono">
+                <tbody className="divide-y divide-[var(--nm-border)] font-mono">
                   {/* 1. Ore Regie */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Normale (Regie)</td>
-                    <td className="text-center font-bold text-blue-600 dark:text-blue-400">{auditDiffs.appNormal}h</td>
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">Ore Normale (Regie)</td>
+                    <td className="text-center font-black text-blue-500">{auditDiffs.appNormal}h</td>
                     <td className="text-center">
                       <input
                         type="number"
@@ -885,19 +898,19 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                           const val = e.target.value;
                           setFluturasInputs({ ...fluturasInputs, normalHours: val === '' ? 0 : parseFloat(val) || 0 });
                         }}
-                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        className="w-16 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                       />
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffNormal === 0 ? 'text-gray-400' : auditDiffs.diffNormal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                    <td className={`text-right font-black ${auditDiffs.diffNormal === 0 ? 'text-[var(--nm-text-muted)]' : auditDiffs.diffNormal < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                       {auditDiffs.diffNormal > 0 ? `+${auditDiffs.diffNormal}h` : `${auditDiffs.diffNormal}h`}
                     </td>
                   </tr>
 
                   {/* 2. Concediu Odihnă (CO) */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Concediu Odihnă (CO)</td>
-                    <td className="text-center font-bold text-gray-600 dark:text-gray-300">
-                      {fluturasInputs.vacationDays} zile ({fluturasInputs.vacationDays * 8}h)
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">Concediu Odihnă (CO)</td>
+                    <td className="text-center font-black text-[var(--nm-text-muted)]">
+                      {fluturasInputs.vacationDays}z ({fluturasInputs.vacationDays * 8}h)
                     </td>
                     <td className="text-center">
                       <input
@@ -911,21 +924,21 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                           const val = e.target.value;
                           setFluturasInputs({ ...fluturasInputs, vacationDays: val === '' ? 0 : parseInt(val) || 0 });
                         }}
-                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        className="w-16 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                       />
                     </td>
-                    <td className="text-right font-bold text-gray-400">
+                    <td className="text-right font-black text-[var(--nm-text-muted)]">
                       0 zile
                     </td>
                   </tr>
 
                   {/* 3. Ore Suplimentare (200% vs Reale) */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">
                       <div>Ore Suplimentare</div>
-                      <div className="text-[10px] text-gray-400 font-normal">Fabrică plătește 200% (1:2)</div>
+                      <div className="text-[10px] text-[var(--nm-text-muted)] font-normal">Plată 200% (1:2)</div>
                     </td>
-                    <td className="text-center font-bold text-purple-600 dark:text-purple-400">
+                    <td className="text-center font-black text-purple-500">
                       {auditDiffs.appOvertime > 0 ? `${auditDiffs.appOvertime}h` : `${auditDiffs.fluturasRealEquivalent}h echiv.`}
                     </td>
                     <td className="text-center">
@@ -939,22 +952,22 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                             const val = e.target.value;
                             setFluturasInputs({ ...fluturasInputs, overtimeHours: val === '' ? 0 : parseFloat(val) || 0 });
                           }}
-                          className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                          className="w-16 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                         />
                         <span className="text-[10px] text-purple-500 font-bold mt-0.5">
-                          = {fluturasInputs.overtimeHours * 2}h reale
+                          = {fluturasInputs.overtimeHours * 2}h
                         </span>
                       </div>
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffOvertime === 0 ? 'text-emerald-500' : auditDiffs.diffOvertime < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                      {auditDiffs.diffOvertime === 0 ? '0h (100% OK)' : auditDiffs.diffOvertime > 0 ? `+${auditDiffs.diffOvertime}h` : `${auditDiffs.diffOvertime}h`}
+                    <td className={`text-right font-black ${auditDiffs.diffOvertime === 0 ? 'text-emerald-500' : auditDiffs.diffOvertime < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                      {auditDiffs.diffOvertime === 0 ? '0h (OK)' : auditDiffs.diffOvertime > 0 ? `+${auditDiffs.diffOvertime}h` : `${auditDiffs.diffOvertime}h`}
                     </td>
                   </tr>
 
                   {/* 4. Primă OS */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Primă OS</td>
-                    <td className="text-center font-bold text-gray-600 dark:text-gray-300">
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">Primă OS</td>
+                    <td className="text-center font-black text-[var(--nm-text-muted)]">
                       {fluturasInputs.primaOS} lei
                     </td>
                     <td className="text-center">
@@ -967,18 +980,18 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                           const val = e.target.value;
                           setFluturasInputs({ ...fluturasInputs, primaOS: val === '' ? 0 : parseFloat(val) || 0 });
                         }}
-                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        className="w-16 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                       />
                     </td>
-                    <td className="text-right font-bold text-emerald-500">
+                    <td className="text-right font-black text-emerald-500">
                       0 lei
                     </td>
                   </tr>
 
                   {/* 5. Ore de Noapte */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Ore Noapte (25%)</td>
-                    <td className="text-center font-bold text-indigo-600 dark:text-indigo-400">
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">Ore Noapte (25%)</td>
+                    <td className="text-center font-black text-indigo-500">
                       {auditDiffs.appNight > 0 ? `${auditDiffs.appNight}h` : `${fluturasInputs.nightHours}h`}
                     </td>
                     <td className="text-center">
@@ -991,18 +1004,18 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                           const val = e.target.value;
                           setFluturasInputs({ ...fluturasInputs, nightHours: val === '' ? 0 : parseFloat(val) || 0 });
                         }}
-                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        className="w-16 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                       />
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffNight === 0 ? 'text-gray-400' : auditDiffs.diffNight < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                    <td className={`text-right font-black ${auditDiffs.diffNight === 0 ? 'text-[var(--nm-text-muted)]' : auditDiffs.diffNight < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                       {auditDiffs.diffNight > 0 ? `+${auditDiffs.diffNight}h` : `${auditDiffs.diffNight}h`}
                     </td>
                   </tr>
 
                   {/* 6. Tichete Masă */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">Tichete Masă</td>
-                    <td className="text-center font-bold text-teal-600 dark:text-teal-400">{auditDiffs.appTickets}</td>
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">Tichete Masă</td>
+                    <td className="text-center font-black text-teal-500">{auditDiffs.appTickets}</td>
                     <td className="text-center">
                       <input
                         type="number"
@@ -1013,21 +1026,21 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                           const val = e.target.value;
                           setFluturasInputs({ ...fluturasInputs, mealTicketsCount: val === '' ? 0 : parseInt(val) || 0 });
                         }}
-                        className="w-16 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        className="w-16 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                       />
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffTickets === 0 ? 'text-gray-400' : auditDiffs.diffTickets < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                    <td className={`text-right font-black ${auditDiffs.diffTickets === 0 ? 'text-[var(--nm-text-muted)]' : auditDiffs.diffTickets < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                       {auditDiffs.diffTickets > 0 ? `+${auditDiffs.diffTickets}` : `${auditDiffs.diffTickets}`}
                     </td>
                   </tr>
 
                   {/* 7. Rest de Plată */}
                   <tr>
-                    <td className="py-2.5 font-sans font-medium text-gray-900 dark:text-white">
+                    <td className="py-3 font-sans font-semibold text-[var(--nm-text)]">
                       <div>Rest Plată (Lichidare)</div>
-                      <div className="text-[10px] text-gray-400 font-normal">Calculat vs Fluturaș</div>
+                      <div className="text-[10px] text-[var(--nm-text-muted)] font-normal">Calculat vs Fluturaș</div>
                     </td>
-                    <td className="text-center font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="text-center font-black text-emerald-500">
                       {auditDiffs.calculatedRestPlata.toLocaleString('ro-RO')} lei
                     </td>
                     <td className="text-center">
@@ -1040,10 +1053,10 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
                           const val = e.target.value;
                           setFluturasInputs({ ...fluturasInputs, restDePlata: val === '' ? 0 : parseFloat(val) || 0 });
                         }}
-                        className="w-20 p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded text-center text-xs font-bold"
+                        className="w-20 nm-inset-sm p-1.5 text-center text-xs font-bold text-[var(--nm-text)] rounded-lg"
                       />
                     </td>
-                    <td className={`text-right font-bold ${auditDiffs.diffRestPlata === 0 ? 'text-emerald-500' : Math.abs(auditDiffs.diffRestPlata) <= 2 ? 'text-emerald-500' : auditDiffs.diffRestPlata < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                    <td className={`text-right font-black ${auditDiffs.diffRestPlata === 0 || Math.abs(auditDiffs.diffRestPlata) <= 2 ? 'text-emerald-500' : auditDiffs.diffRestPlata < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                       {auditDiffs.diffRestPlata === 0 ? '0 lei (Match!)' : auditDiffs.diffRestPlata > 0 ? `+${auditDiffs.diffRestPlata} lei` : `${auditDiffs.diffRestPlata} lei`}
                     </td>
                   </tr>
@@ -1051,7 +1064,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({
               </table>
             </div>
 
-            <p className="text-[11px] text-gray-400 dark:text-gray-400 pt-2 italic">
+            <p className="text-[11px] text-[var(--nm-text-muted)] pt-2 italic">
               * Poți ajusta direct cifrele din coloana „Pe Fluturaș” dacă poza a fost parțial neclară.
             </p>
           </div>
