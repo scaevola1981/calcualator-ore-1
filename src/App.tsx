@@ -752,27 +752,29 @@ const App: React.FC = () => {
                 <NavItem id="home" label="Acasă" icon={Home} />
                 <NavItem id="history" label="Istoric" icon={History} />
 
-                {/* Master START / STOP Action Button (+20% size) */}
+                {/* Master START / STOP Action Squircle Button */}
                 <button
                   id="navbar-start-stop-btn"
                   onClick={handleStartStop}
                   title={isWorking ? "Oprește tura de muncă (STOP MUNCĂ)" : "Pornește tura de muncă (START MUNCĂ)"}
                   className={`
-                    flex items-center justify-center gap-2 sm:gap-2.5
-                    px-4 sm:px-5 py-3 sm:py-3.5 rounded-[22px]
-                    font-black text-xs sm:text-sm tracking-wider uppercase
-                    transition-all duration-200 shadow-md active:scale-95 shrink-0 mx-0.5 sm:mx-1
+                    flex flex-col items-center justify-center
+                    w-[68px] h-[68px] sm:w-[72px] sm:h-[72px]
+                    rounded-[22px] sm:rounded-[24px] shrink-0 mx-1 sm:mx-2
+                    transition-all duration-200 shadow-lg active:scale-95
                     ${isWorking ? 'nm-power-btn-stop animate-pulse' : 'nm-power-btn-start'}
                   `}
                 >
                   {isWorking ? (
-                    <Square fill="currentColor" size={17} className="shrink-0 text-white" />
+                    <Square fill="currentColor" size={20} className="shrink-0 text-white" />
                   ) : (
-                    <Play fill="currentColor" size={17} className="shrink-0 text-white ml-0.5" />
+                    <Play fill="currentColor" size={22} className="shrink-0 text-white ml-0.5" />
                   )}
-                  <span className="whitespace-nowrap text-white">
-                    <span className="max-[379px]:hidden">{isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}</span>
-                    <span className="min-[380px]:hidden">{isWorking ? "STOP" : "START"}</span>
+                  <span className="text-[10px] sm:text-[11px] font-black tracking-wider uppercase text-white mt-1 leading-none text-center">
+                    {isWorking ? "STOP" : "START"}
+                  </span>
+                  <span className="text-[8px] font-black uppercase text-white/90 tracking-tight leading-none mt-0.5">
+                    MUNCĂ
                   </span>
                 </button>
 
