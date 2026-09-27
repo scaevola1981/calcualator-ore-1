@@ -422,14 +422,14 @@ const App: React.FC = () => {
     return (
       <button
         onClick={() => setPage(id)}
-        className={`flex flex-col items-center justify-center flex-1 py-1.5 px-1 sm:px-2 rounded-2xl transition-all duration-200 relative ${
+        className={`flex flex-col items-center justify-center flex-1 py-2 px-1 sm:px-2.5 rounded-[20px] transition-all duration-200 relative ${
           isActive
             ? "nm-nav-active font-black scale-105"
             : "text-[var(--nm-text-muted)] hover:text-[var(--nm-text)] active:scale-95"
         }`}
       >
-        <Icon size={isActive ? 21 : 19} strokeWidth={isActive ? 2.5 : 2} />
-        <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? "font-black" : "font-medium"}`}>
+        <Icon size={isActive ? 23 : 21} strokeWidth={isActive ? 2.5 : 2} />
+        <span className={`text-[11px] tracking-tight mt-0.5 ${isActive ? "font-black" : "font-medium"}`}>
           {label}
         </span>
       </button>
@@ -465,7 +465,7 @@ const App: React.FC = () => {
 
   return (
     <div id="app-root" className="min-h-screen transition-colors duration-300 bg-[var(--nm-bg)] pb-20">
-      <div className="max-w-[450px] mx-auto min-h-screen relative shadow-2xl overflow-hidden bg-[var(--nm-bg)]">
+      <div className="max-w-[480px] mx-auto min-h-screen relative shadow-2xl overflow-hidden bg-[var(--nm-bg)]">
 
         <div className="relative z-10 flex flex-col h-full min-h-screen">
 
@@ -745,30 +745,30 @@ const App: React.FC = () => {
             )}
           </main>
 
-          {/* BOTTOM NAVIGATION (Neo-Skeuomorphic Floating Dock with Integrated Start/Stop) */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-3 sm:px-4 bottom-nav-safe pointer-events-none">
-            <div className="max-w-[430px] w-full pointer-events-auto nm-nav-dock">
-              <div className="flex items-center justify-between h-16 px-1.5 sm:px-2">
+          {/* BOTTOM NAVIGATION (Neo-Skeuomorphic Floating Dock with Integrated Start/Stop - Enlarged +10% and lowered by 50px) */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-3 sm:px-4 bottom-nav-safe pointer-events-none translate-y-[50px]">
+            <div className="max-w-[473px] w-full pointer-events-auto nm-nav-dock">
+              <div className="flex items-center justify-between h-[71px] px-2 sm:px-3">
                 <NavItem id="home" label="Acasă" icon={Home} />
                 <NavItem id="history" label="Istoric" icon={History} />
 
-                {/* Master START / STOP Action Button */}
+                {/* Master START / STOP Action Button (+10% size) */}
                 <button
                   id="navbar-start-stop-btn"
                   onClick={handleStartStop}
                   title={isWorking ? "Oprește tura de muncă (STOP MUNCĂ)" : "Pornește tura de muncă (START MUNCĂ)"}
                   className={`
                     flex items-center justify-center gap-1.5 sm:gap-2
-                    px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl
-                    font-black text-[11px] sm:text-xs tracking-wider uppercase
+                    px-3.5 sm:px-4.5 py-2.5 sm:py-3 rounded-[20px]
+                    font-black text-xs sm:text-[13px] tracking-wider uppercase
                     transition-all duration-200 shadow-md active:scale-95 shrink-0 mx-0.5 sm:mx-1
                     ${isWorking ? 'nm-power-btn-stop animate-pulse' : 'nm-power-btn-start'}
                   `}
                 >
                   {isWorking ? (
-                    <Square fill="currentColor" size={13} className="shrink-0 text-white" />
+                    <Square fill="currentColor" size={15} className="shrink-0 text-white" />
                   ) : (
-                    <Play fill="currentColor" size={13} className="shrink-0 text-white ml-0.5" />
+                    <Play fill="currentColor" size={15} className="shrink-0 text-white ml-0.5" />
                   )}
                   <span className="whitespace-nowrap text-white">
                     <span className="max-[359px]:hidden">{isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}</span>

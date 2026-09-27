@@ -1,21 +1,23 @@
 # ⏱️ TicTocWork - Contor Ore Muncă
 
-**TicTocWork** este o aplicație modernă, completă și intuitivă pentru pontajul orelor de muncă, calculul salariului, urmărirea automată prin geofencing GPS și analiza detaliată a activității. Construită pe un stack hibrid performant (React 19 + Vite + Capacitor 8), aplicația rulează atât în browser (Web), cât și nativ pe dispozitive mobile (**Android** și **iOS**).
+**TicTocWork** este o aplicație modernă, completă și intuitivă pentru pontajul orelor de muncă, calculul salariului și analiza detaliată a activității. Construită pe un stack hibrid performant (React 19 + Vite + Capacitor 8), aplicația rulează atât în browser (Web), cât și nativ pe dispozitive mobile (**Android** și **iOS**).
 
 ---
 
 ## ✨ Funcționalități Principale
 
 - 🕒 **Pontaj Rapid & Sesiuni de Lucru:**
-  - Pornire și oprire pontaj cu un singur click.
+  - **Buton Master START / STOP MUNCĂ** integrat ergonomic direct în centrul barei de navigare (Floating Dock), mereu la îndemână din orice pagină a aplicației.
+  - Trecere dinamică între starea inactivă (START MUNCĂ - relief verde tactil) și starea activă (STOP MUNCĂ - alertă roșie pulsantă și modal de confirmare).
+  - Ture rapide 1-Click cu presetări pentru fabrică (Schimbul 1: 06:30–16:30, Schimbul 2: 16:30–flexibil, Schimbul 1 scurt: 06:30–15:00).
   - Temporizator în timp real pentru sesiunea activă.
   - Reguli de rotunjire inteligentă a orelor (la 30 minute sau 1 oră).
   - Gestionare automată a turelor care trec de miezul nopții.
 
-- 📍 **Geofencing GPS Inteligent:**
-  - Selectare punct de lucru pe o hartă interactivă (OpenStreetMap / Leaflet).
-  - Setare rază de acoperire (geofence).
-  - Notificări și pontare automată/asistată la intrarea sau părăsirea zonei de lucru.
+- 🚫 **Renunțarea la Geofencing (Autonomie & Confidențialitate):**
+  - S-a renunțat complet la monitorizarea automată prin Geofencing / GPS în favoarea autonomiei bateriei și a protecției absolute a confidențialității utilizatorului.
+  - Înlocuit cu sistemul ultra-rapid de **1-Click Pontaj Rapid & Schimburi Fabrică** și butonul Master central din navbar.
+  - Zero permisiuni intruzive de localizare de fundal și zero consum suplimentar de baterie.
 
 - 💰 **Calculator de Salariu:**
   - **Mod Simplu:** Tarif orar standard × Total ore lucrate.
@@ -33,8 +35,10 @@
 - 🔔 **Notificări Locale & Push:**
   - Notificări locale la sosire/plecare și mesaje de reamintire pontaj.
 
-- 🌓 **Interfață Modernă & Dark Mode:**
-  - Design premium, responsive, optimizat pentru experiență touch mobilă.
+- 🌓 **Interfață Neo-Skeuomorphic & Dark Mode:**
+  - Design premium Neumorphic / Neo-Skeuomorphic tactil, cu relief 3D, umbre duble contrastante și indicatori LED de stare.
+  - Bară de navigare plutitoare (Floating Dock) ergonomică, cu acces rapid la: Acasă, Istoric, butonul central START/STOP MUNCĂ, Calcul și Setări.
+  - Optimizat complet pentru ecrane tactile de orice dimensiune (iOS și Android).
   - Suport complet pentru temă luminoasă (Light) și întunecată (Dark).
 
 - 💾 **Persistență Locală a Datelor:**
@@ -51,7 +55,7 @@
 | **Vite 7** | Build tool ultra-rapid pentru dezvoltare și bundling |
 | **Tailwind CSS 4** | Sistem modern de stilizare și design responsive |
 | **Capacitor 8** | Runtime cross-platform pentru rulare nativă pe Android & iOS |
-| **Leaflet & React-Leaflet** | Hărți interactive pentru configurarea geofence-ului |
+| **Tesseract.js** | Scanare și recunoaștere automată (OCR) a fluturașilor de salariu |
 | **Recharts** | Generare diagrame și grafice statistice |
 | **Lucide React** | Set complet de pictograme vectoriale |
 | **date-fns** | Parsare, manipulare și formatare date calendaristice |
@@ -67,17 +71,17 @@ calcualator-ore-1/
 ├── dist/                      # Fișierele compilate gata pentru producție
 ├── src/
 │   ├── components/            # Componente React (Pagini, Carduri, Modale)
-│   │   ├── CalculatorPage.tsx # Calculator salariu (simplu & detaliat)
+│   │   ├── CalculatorPage.tsx # Calculator salariu (simplu, detaliat & scanner OCR)
 │   │   ├── HistoryPage.tsx    # Istoric pontaj și calendar
-│   │   ├── SettingsPage.tsx   # Setări profil, financiare și geofencing
-│   │   ├── GeofenceMapModal.tsx # Modal hartă Leaflet
+│   │   ├── SettingsPage.tsx   # Setări profil, parametri financiari și temă
+│   │   ├── Shift2Modal.tsx    # Modal selecție oră Schimbul 2 (noapte)
+│   │   ├── MonthlyReportModal.tsx # Export și raport lunar detaliat
 │   │   ├── ChartCard.tsx      # Grafic săptămânal ore lucrate
 │   │   ├── DayNightChart.tsx  # Distribuție ore zi / noapte
 │   │   └── ...
-│   ├── hooks/                 # Custom hooks (ex: useGeofencing.ts)
-│   ├── services/              # Servicii (notificări, geolocație)
-│   ├── utils/                 # Algoritmi rotunjire timp, sărbători legale RO, formatare date
-│   ├── App.tsx                # Containerul principal și rutarea stării
+│   ├── services/              # Servicii (notificări locale, alerte schimb)
+│   ├── utils/                 # Algoritmi rotunjire timp, sărbători legale RO, export rapoarte
+│   ├── App.tsx                # Containerul principal și bara de navigare cu butonul START/STOP
 │   ├── main.tsx               # Punctul de intrare React
 │   └── types.ts               # Definiții de tipuri TypeScript
 ├── capacitor.config.ts        # Configurația Capacitor (App ID, nume, webDir)
@@ -190,9 +194,10 @@ npx cap open ios
 
 ## 🔒 Permisiuni & Confidențialitate
 
-- **Locație (GPS):** Utilizată exclusiv local pentru funcția de geofencing (verificarea prezenței la locul de muncă). Nu sunt trimise date de poziționare către servere externe.
-- **Notificări:** Folosite strict local pentru a vă alerta la începerea sau terminarea turei de lucru.
-- **Date Financiare:** Setările de salariu, bonuri de masă și istoricul pontajelor sunt stocate pe memoria dispozitivului dumneavoastră.
+- **Locație (GPS):** **Complet eliminată / dezactivată.** S-a renunțat la Geofencing; aplicația nu solicită permisiuni de geolocație și nu rulează procese de monitorizare GPS de fundal, protejând bateria și intimitatea utilizatorului.
+- **Notificări:** Folosite strict local pentru a vă alerta la începerea sau terminarea turei de lucru, praguri de 8h/12h și reamintiri.
+- **Cameră Foto & Galerie:** Folosite exclusiv opțional, la cererea utilizatorului, pentru scanarea automată (OCR) a fluturașilor de salariu.
+- **Date Financiare & Pontaj:** Setările de salariu, bonuri de masă și istoricul pontajelor sunt stocate exclusiv pe memoria locală a dispozitivului dumneavoastră (funcționează 100% offline).
 
 ---
 
