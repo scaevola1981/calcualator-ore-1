@@ -432,7 +432,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   const preview = getPreviewDuration();
 
   return (
-    <div className="space-y-4 animate-fade-in pb-24">
+    <div className="space-y-4 animate-fade-in pb-[125px]">
       {/* HEADER */}
       <header className="px-6 header-safe-top pb-6 mb-4 relative nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-4 z-20">
         <h1 className="text-3xl font-black mb-1 tracking-tight text-[var(--nm-text)]">

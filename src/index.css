@@ -63,7 +63,11 @@
 }
 
 .bottom-nav-safe {
-  padding-bottom: max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.6rem)) !important;
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 8px)) !important;
+}
+
+.bottom-dock-fixed {
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 8px)) !important;
 }
 
 .start-btn-safe {
@@ -202,18 +206,18 @@
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.9), inset 1px 1px 2px #FFFFFF;
 }
 
-/* Floating Bottom Navigation Dock */
+/* Floating Bottom Navigation Dock (+20% Enlarged) */
 .nm-nav-dock {
   background: var(--nm-card-grad);
-  box-shadow: 10px 10px 28px var(--nm-shadow-dark), -10px -10px 28px var(--nm-shadow-light);
-  border: 1px solid var(--nm-border);
-  border-radius: 29px;
+  box-shadow: 12px 12px 32px var(--nm-shadow-dark), -12px -12px 32px var(--nm-shadow-light);
+  border: 1.5px solid var(--nm-border);
+  border-radius: 35px;
 }
 
 .nm-nav-active {
   background: var(--nm-inset-bg);
-  box-shadow: inset 3.5px 3.5px 7px var(--nm-shadow-dark), inset -3.5px -3.5px 7px var(--nm-shadow-light);
-  border-radius: 20px;
+  box-shadow: inset 4px 4px 8px var(--nm-shadow-dark), inset -4px -4px 8px var(--nm-shadow-light);
+  border-radius: 24px;
   color: #2563EB !important;
 }
 
