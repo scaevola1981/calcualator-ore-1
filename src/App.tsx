@@ -7,7 +7,8 @@ import {
   Calculator,
   Zap, // Lightning icon for Overtime
   Square,
-  RotateCw
+  RotateCw,
+  Play
 } from "lucide-react";
 import { ChartCard } from "./components/ChartCard";
 import { HistoryPage } from "./components/HistoryPage";
@@ -421,7 +422,7 @@ const App: React.FC = () => {
     return (
       <button
         onClick={() => setPage(id)}
-        className={`flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-2xl transition-all duration-200 relative ${
+        className={`flex flex-col items-center justify-center flex-1 py-1.5 px-1 sm:px-2 rounded-2xl transition-all duration-200 relative ${
           isActive
             ? "nm-nav-active font-black scale-105"
             : "text-[var(--nm-text-muted)] hover:text-[var(--nm-text)] active:scale-95"
@@ -502,7 +503,7 @@ const App: React.FC = () => {
                 </header>
 
                 {/* Content Container with ample bottom padding for floating controls */}
-                <div className="px-5 pt-5 pb-52 space-y-4">
+                <div className="px-5 pt-5 pb-28 space-y-4">
 
                   {/* ROW 1: Monthly Stats (Normal & Overtime) */}
                   <div className="grid grid-cols-2 gap-3.5">
@@ -744,35 +745,37 @@ const App: React.FC = () => {
             )}
           </main>
 
-          {/* START/STOP BUTTON (STICKY 3D POWER PILL) */}
-          {page === 'home' && (
-            <div className="fixed start-btn-safe left-0 right-0 z-40 flex justify-center w-full px-4 pointer-events-none">
-              <div className="max-w-[420px] w-full flex justify-center pointer-events-auto">
+          {/* BOTTOM NAVIGATION (Neo-Skeuomorphic Floating Dock with Integrated Start/Stop) */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-3 sm:px-4 bottom-nav-safe pointer-events-none">
+            <div className="max-w-[430px] w-full pointer-events-auto nm-nav-dock">
+              <div className="flex items-center justify-between h-16 px-1.5 sm:px-2">
+                <NavItem id="home" label="Acasă" icon={Home} />
+                <NavItem id="history" label="Istoric" icon={History} />
+
+                {/* Master START / STOP Action Button */}
                 <button
+                  id="navbar-start-stop-btn"
                   onClick={handleStartStop}
+                  title={isWorking ? "Oprește tura de muncă (STOP MUNCĂ)" : "Pornește tura de muncă (START MUNCĂ)"}
                   className={`
-                    flex items-center gap-3 px-8 py-3.5
-                    rounded-full font-black text-base tracking-wide
-                    ${isWorking ? 'nm-power-btn-stop' : 'nm-power-btn-start'}
+                    flex items-center justify-center gap-1.5 sm:gap-2
+                    px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl
+                    font-black text-[11px] sm:text-xs tracking-wider uppercase
+                    transition-all duration-200 shadow-md active:scale-95 shrink-0 mx-0.5 sm:mx-1
+                    ${isWorking ? 'nm-power-btn-stop animate-pulse' : 'nm-power-btn-start'}
                   `}
                 >
                   {isWorking ? (
-                    <Square fill="white" size={18} />
+                    <Square fill="currentColor" size={13} className="shrink-0 text-white" />
                   ) : (
-                    <Clock strokeWidth={2.5} size={22} className="text-white" />
+                    <Play fill="currentColor" size={13} className="shrink-0 text-white ml-0.5" />
                   )}
-                  <span>{isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}</span>
+                  <span className="whitespace-nowrap text-white">
+                    <span className="max-[359px]:hidden">{isWorking ? "STOP MUNCĂ" : "START MUNCĂ"}</span>
+                    <span className="min-[360px]:hidden">{isWorking ? "STOP" : "START"}</span>
+                  </span>
                 </button>
-              </div>
-            </div>
-          )}
 
-          {/* BOTTOM NAVIGATION (Neo-Skeuomorphic Floating Dock) */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full px-4 bottom-nav-safe pointer-events-none">
-            <div className="max-w-[420px] w-full pointer-events-auto nm-nav-dock">
-              <div className="flex items-center justify-around h-16 px-2">
-                <NavItem id="home" label="Acasă" icon={Home} />
-                <NavItem id="history" label="Istoric" icon={History} />
                 <NavItem id="calculator" label="Calcul" icon={Calculator} />
                 <NavItem id="settings" label="Setări" icon={SettingsIcon} />
               </div>
