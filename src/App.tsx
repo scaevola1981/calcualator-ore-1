@@ -159,10 +159,15 @@ const App: React.FC = () => {
   // --- THEME TOGGLE (Runtime updates) ---
   useLayoutEffect(() => {
     if (isLoading) return; // Handled in loadData
-    if (settings.theme === 'dark') {
+    const isDark = settings.theme === 'dark';
+    if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', isDark ? '#0A1422' : '#E8EEF5');
     }
   }, [settings.theme, isLoading]);
 
@@ -465,6 +470,9 @@ const App: React.FC = () => {
 
   return (
     <div id="app-root" className="min-h-screen transition-colors duration-300 bg-[var(--nm-bg)]">
+      {/* Top Safe Area Status Bar Shield (Blocks scrolled content from overlapping iOS status bar/notch) */}
+      <div className="top-safe-area-shield" aria-hidden="true" />
+
       <div className="max-w-[500px] mx-auto min-h-screen relative shadow-2xl overflow-hidden bg-[var(--nm-bg)]">
 
         <div className="relative z-10 flex flex-col h-full min-h-screen">
@@ -474,7 +482,7 @@ const App: React.FC = () => {
             {page === "home" && (
               <div className="animate-fade-in">
                 {/* Neo-Skeuomorphic Header Deck */}
-                <header className="px-6 header-safe-top pb-6 nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-1 relative z-20">
+                <header className="px-6 pt-16 sm:pt-20 header-safe-top pb-6 nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-1 relative z-20">
                   <div className="flex justify-between items-start">
                     <div>
                       <h1 className="text-2xl sm:text-3xl font-black text-[var(--nm-text)] tracking-tight">

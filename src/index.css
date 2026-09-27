@@ -54,24 +54,67 @@
 
 /* iOS Safe Area Utilities */
 .header-safe-top {
-  padding-top: max(3.75rem, calc(env(safe-area-inset-top, 0px) + 1.5rem)) !important;
+  padding-top: 4.5rem !important;
+  padding-top: calc(env(safe-area-inset-top) + 1.75rem) !important;
+  padding-top: max(4.5rem, calc(env(safe-area-inset-top) + 1.75rem)) !important;
+}
+
+/* Top Safe Area Status Bar Shield (Blocks scrolled content from overlapping iOS status bar) */
+.top-safe-area-shield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  pointer-events: none;
+  background: var(--nm-bg);
+  height: 0px;
+  height: env(safe-area-inset-top);
+  transition: background-color 0.25s ease;
+}
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .top-safe-area-shield {
+    height: calc(env(safe-area-inset-top) + 4px);
+    background: var(--nm-bg);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+  .top-safe-area-shield::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: linear-gradient(to bottom, var(--nm-bg), transparent);
+    pointer-events: none;
+  }
 }
 
 .modal-safe-inset {
-  padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 1rem)) !important;
-  padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem)) !important;
+  padding-top: 1.5rem !important;
+  padding-top: calc(env(safe-area-inset-top) + 1.25rem) !important;
+  padding-top: max(1.5rem, calc(env(safe-area-inset-top) + 1.25rem)) !important;
+  padding-bottom: 1.5rem !important;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1.25rem) !important;
+  padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom) + 1.25rem)) !important;
 }
 
 .bottom-nav-safe {
-  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 8px)) !important;
+  bottom: 20px !important;
+  bottom: calc(env(safe-area-inset-bottom) + 8px) !important;
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 8px)) !important;
 }
 
 .bottom-dock-fixed {
-  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 8px)) !important;
+  bottom: 20px !important;
+  bottom: calc(env(safe-area-inset-bottom) + 8px) !important;
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 8px)) !important;
 }
 
 .start-btn-safe {
-  bottom: calc(max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.6rem)) + 4rem + 1.25rem) !important;
+  bottom: calc(max(0.75rem, calc(env(safe-area-inset-bottom) + 0.6rem)) + 4rem + 1.25rem) !important;
 }
 
 /* ========================================================

@@ -37,7 +37,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-[125px] px-4">
       {/* HEADER NEO-SKEUOMORPHIC */}
-      <header className="px-6 header-safe-top pb-6 nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-4 relative z-20">
+      <header className="px-6 pt-16 sm:pt-20 header-safe-top pb-6 nm-card !rounded-t-none !rounded-b-[32px] border-t-0 -mx-4 relative z-20">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-[var(--nm-text)] tracking-tight flex items-center gap-2">
